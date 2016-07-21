@@ -1,0 +1,7 @@
+*.pyc
+.*.swp
+.coverage
+venv/
+env/
+db.sqlite3
+videofront/settings_prod.py
