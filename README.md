@@ -32,9 +32,10 @@ Run a development server on port 9000:
 
 ## Development
 
-Install test requirements:
+Install test and contrib requirements:
 
     pip install -r requirements/tests.txt
+    pip install -r requirements/aws.txt
 
 Run unit tests:
 
@@ -59,4 +60,4 @@ Note that if you need to access AWS services, the `AWS_ACCESS_KEY_ID` and `AWS_S
 
 ## License
 
-TODO
+The code in this repository is licensed under version 3 of the AGPL unless otherwise noted. Your rights and duties are summarised [here](https://tldrlegal.com/license/gnu-affero-general-public-license-v3-(agpl-3.0)). Please see the LICENSE file for details.
