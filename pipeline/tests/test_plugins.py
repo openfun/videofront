@@ -12,6 +12,10 @@ class DummyPlugin(object):
 
 class PipelinePluginsTests(TestCase):
 
+    def test_load_all_plugins(self):
+        plugins.load('GET_UPLOAD_URL')
+        plugins.load('GET_UPLOADED_VIDEO')
+
     @override_settings(PLUGINS={})
     def test_undefined_plugin(self):
         self.assertRaises(plugins.UndefinedPlugin, plugins.load, "DUMMY")
@@ -30,3 +34,7 @@ class PipelinePluginsTests(TestCase):
 
         self.assertIsNotNone(dummy)
         self.assertEqual(42, dummy())
+
+    @override_settings(PLUGINS={"DUMMY": lambda: 42})
+    def test_plugins_call(self):
+        self.assertEqual(42, plugins.call('DUMMY'))

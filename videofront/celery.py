@@ -11,11 +11,13 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'videofront.settings')
 from django.conf import settings
 
 app = Celery('videofront')
-
-# Using a string here means the worker will not have to
-# pickle the object when using Windows.
 app.config_from_object('django.conf:settings')
-app.autodiscover_tasks(lambda: settings.INSTALLED_APPS) # TODO do we really want to load all tasks from all apps?
+
+
+# Load automatically all tasks from all installed apps. Note that in order to
+# call tasks by name, you will have to manually import your task files in your
+# app/__init__.py file.
+app.autodiscover_tasks(lambda: settings.INSTALLED_APPS) 
 
 
 # TODO do we want to keep this function?

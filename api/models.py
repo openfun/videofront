@@ -1,0 +1,17 @@
+from __future__ import unicode_literals
+
+from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from rest_framework.authtoken.models import Token
+
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_auth_token(sender, instance=None, created=False, **kwargs):
+    """
+    Create authentication tokens automatically for every created user. Note
+    that this signal must be declared in a model module, or in another module
+    that is loaded early.
+    """
+    if created:
+        Token.objects.create(user=instance)

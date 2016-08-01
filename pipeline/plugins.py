@@ -1,6 +1,12 @@
 import importlib
 from django.conf import settings
 
+def call(name, *args, **kwargs):
+    """
+    Load a plugin and call it with the specified arguments.
+    """
+    return load(name)(*args, **kwargs)
+
 def load(name):
     """
     Load a plugin based on the PLUGINS[name] setting.

@@ -5,3 +5,4 @@ venv/
 env/
 db.sqlite3
 videofront/settings_prod.py
+celerybeat-schedule

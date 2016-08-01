@@ -1,1 +1,88 @@
+from __future__ import unicode_literals
 
+from django.core.validators import MinLengthValidator, MinValueValidator, MaxValueValidator
+from django.db import models
+
+from . import managers
+
+
+class Video(models.Model):
+    title = models.CharField(max_length=100)
+    public_id = models.CharField(
+        verbose_name="Public video ID", max_length=20, unique=True,
+        validators=[MinLengthValidator(1)]
+    )
+
+    @property
+    def transcoding_status(self):
+        return self.transcoding.status if self.transcoding else None
+
+    @property
+    def transcoding_progress(self):
+        return self.transcoding.progress if self.transcoding else None
+
+    @property
+    def transcoding_started_at(self):
+        return self.transcoding.started_at if self.transcoding else None
+
+
+class VideoUploadUrl(models.Model):
+    """
+    Video upload urls are generated in order to upload new videos. To each url is
+    associated an expiration date after which is cannot be used. Note however
+    that an upload that has started just before the expiry date should proceed
+    normally.
+    """
+    public_video_id = models.CharField(
+        verbose_name="Public video ID",
+        max_length=20,
+        unique=True,
+        validators=[MinLengthValidator(1)]
+    )
+    expires_at = models.IntegerField(
+        verbose_name="Timestamp at which the url expires",
+        db_index=True
+    )
+    was_used = models.BooleanField(
+        verbose_name="Was the upload url used",
+        default=False,
+        db_index=True
+    )
+    last_checked = models.DateTimeField(
+        verbose_name="Last time it was checked if the url was used",
+        blank=True, null=True,
+        db_index=True,
+    )
+
+    objects = managers.VideoUploadUrlManager()
+
+
+class VideoTranscoding(models.Model):
+
+    STATUS_PENDING = 'pending'
+    STATUS_PROCESSING = 'processing'
+    STATUS_FAILED = 'failed'
+    STATUS_SUCCESS = 'success'
+    STATUSES = (
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_PROCESSING, 'Processing'),
+        (STATUS_FAILED, 'Failed'),
+        (STATUS_SUCCESS, 'Success'),
+    )
+
+    video = models.OneToOneField(Video, related_name='transcoding')
+    started_at = models.DateTimeField(
+        verbose_name="Time of transcoding job start",
+        auto_now=True
+    )
+    progress = models.FloatField(
+        verbose_name="Progress percentage",
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)]
+    )
+    status = models.CharField(
+        verbose_name="Status",
+        max_length=32,
+        choices=STATUSES
+    )
+    message = models.CharField(max_length=1024, blank=True)

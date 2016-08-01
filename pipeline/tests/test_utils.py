@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from . import utils
+from pipeline import utils
 
 class UtilsTests(TestCase):
 

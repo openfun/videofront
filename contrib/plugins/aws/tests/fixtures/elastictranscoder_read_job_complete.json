@@ -1,0 +1,62 @@
+{
+    "Job": {
+        "Arn": "arn:aws:elastictranscoder:eu-west-1:039681746956:job/jobid", 
+        "Id": "jobid", 
+        "Input": {
+            "DetectedProperties": {
+                "DurationMillis": 5340, 
+                "FileSize": 185904, 
+                "FrameRate": "25", 
+                "Height": 240, 
+                "Width": 320
+            }, 
+            "Key": "videos/src/7qLXScCIRhwo/video.mp4"
+        }, 
+        "Output": {
+            "Duration": 6, 
+            "DurationMillis": 5388, 
+            "FileSize": 1136188, 
+            "FrameRate": "29.97", 
+            "Height": 240, 
+            "Id": "1", 
+            "Key": "videos/transcoded/7qLXScCIRhwo/video.mp4", 
+            "PresetId": "presetid-000001", 
+            "Status": "Complete", 
+            "Watermarks": [], 
+            "Width": 320
+        }, 
+        "Outputs": [
+            {
+                "Duration": 6, 
+                "DurationMillis": 5388, 
+                "FileSize": 1136188, 
+                "FrameRate": "29.97", 
+                "Height": 240, 
+                "Id": "1", 
+                "Key": "videos/transcoded/7qLXScCIRhwo/video.mp4", 
+                "PresetId": "1351620000001-000001", 
+                "Status": "Complete", 
+                "Watermarks": [], 
+                "Width": 320
+            }
+        ], 
+        "PipelineId": "pipelineid", 
+        "Playlists": [], 
+        "Status": "Complete", 
+        "Timing": {
+            "FinishTimeMillis": 1470238175015, 
+            "StartTimeMillis": 1470238168363, 
+            "SubmitTimeMillis": 1470238166211
+        }
+    }, 
+    "ResponseMetadata": {
+        "HTTPHeaders": {
+            "content-length": "1509", 
+            "content-type": "application/json", 
+            "date": "Wed, 03 Aug 2016 16:11:14 GMT", 
+            "x-amzn-requestid": "e6d26ab1-5994-11e6-967a-b7e680daf462"
+        }, 
+        "HTTPStatusCode": 200, 
+        "RequestId": "e6d26ab1-5994-11e6-967a-b7e680daf462"
+    }
+}

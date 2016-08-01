@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -26,7 +27,6 @@ INSTALLED_APPS = [
     # Local apps
     'api',
     'pipeline',
-    'video',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -68,6 +68,15 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    }
+}
+
+# Caching
+# https://docs.djangoproject.com/en/1.9/topics/cache/#database-caching
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'videofront_default_cache',
     }
 }
 
@@ -125,10 +134,20 @@ CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
 CELERY_ALWAYS_EAGER = True
 CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
-# Backends are classes that will be loaded dynamically in order to
+CELERYBEAT_SCHEDULE = {
+    'monitor_uploads': {
+        'task': 'monitor_uploads',
+        'schedule': timedelta(seconds=5),
+    },
+}
+
+# Plugins are objects (usually functions) that will be loaded dynamically in order to
 # provide some pieces of functionality. In order to override an existing
 # plugin, you just need to define a object (function, class or instance) that
 # provides the required feature.
 PLUGINS = {
-    "GET_UPLOAD_URL": "pipeline.videoupload.base_get_upload_url"
+    'GET_UPLOAD_URL': 'pipeline.video.base_get_upload_url',
+    'GET_UPLOADED_VIDEO': 'pipeline.video.base_get_uploaded_video',
+    'TRANSCODE_VIDEO': 'pipeline.video.base_transcode_video',
+    'DELETE_RESOURCES': 'pipeline.video.base_delete_resources',
 }

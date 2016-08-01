@@ -3,8 +3,14 @@ from django.conf import settings
 import boto3
 
 
+def elastic_transcode_client():
+    return session().client('elastictranscoder', region_name=settings.AWS_REGION)
+
 def s3_client():
     return session().client('s3', region_name=settings.AWS_REGION)
+
+def elastictranscoder_client():
+    return session().client('elastictranscoder', region_name=settings.AWS_REGION)
 
 def session():
     """

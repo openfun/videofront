@@ -1,0 +1,41 @@
+{
+    "Job": {
+        "Arn": "arn:aws:elastictranscoder:eu-west-1:039681746956:job/jobid", 
+        "Id": "jobid", 
+        "Input": {
+            "Key": "videos/src/videoid/video.mp4"
+        }, 
+        "Output": {
+            "Id": "1", 
+            "Key": "videos/transcoded/videoid/video.mp4", 
+            "PresetId": "1351620000001-000001", 
+            "Status": "Submitted", 
+            "Watermarks": []
+        }, 
+        "Outputs": [
+            {
+                "Id": "1", 
+                "Key": "videos/transcoded/videoid/video.mp4", 
+                "PresetId": "presetid-000001", 
+                "Status": "Submitted", 
+                "Watermarks": []
+            }
+        ], 
+        "PipelineId": "pipelineid", 
+        "Playlists": [], 
+        "Status": "Submitted", 
+        "Timing": {
+            "SubmitTimeMillis": 1470238166211
+        }
+    }, 
+    "ResponseMetadata": {
+        "HTTPHeaders": {
+            "content-length": "1413", 
+            "content-type": "application/json", 
+            "date": "Wed, 03 Aug 2016 15:29:26 GMT", 
+            "x-amzn-requestid": "0fcc9554-598f-11e6-ad17-33f0ef7ff902"
+        }, 
+        "HTTPStatusCode": 201, 
+        "RequestId": "0fcc9554-598f-11e6-ad17-33f0ef7ff902"
+    }
+}

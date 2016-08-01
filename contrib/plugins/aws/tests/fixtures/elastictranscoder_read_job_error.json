@@ -1,0 +1,45 @@
+{
+    "Job": {
+        "Arn": "arn:aws:elastictranscoder:eu-west-1:039681746956:job/1470241183425-gfujzx", 
+        "Id": "1470241183425-gfujzx", 
+        "Input": {
+            "Key": "videos/src/videoid/epidemiologie.srt"
+        }, 
+        "Output": {
+            "Id": "1", 
+            "Key": "videos/transcoded/videoid/video.mp4", 
+            "PresetId": "presetid-000001", 
+            "Status": "Error", 
+            "StatusDetail": "3002 8d263974-a33f-4690-a096-87d35826ed98: The specified object could not be saved in the specified bucket because an object by that name already exists: bucket=fun-videofront-tests, key=videos/transcoded/videoid/video.mp4.", 
+            "Watermarks": []
+        }, 
+        "Outputs": [
+            {
+                "Id": "1", 
+                "Key": "videos/transcoded/videoid/video.mp4", 
+                "PresetId": "1351620000001-000001", 
+                "Status": "Error", 
+                "StatusDetail": "3002 8d263974-a33f-4690-a096-87d35826ed98: The specified object could not be saved in the specified bucket because an object by that name already exists: bucket=fun-videofront-tests, key=videos/transcoded/videoid/video.mp4.", 
+                "Watermarks": []
+            }
+        ], 
+        "PipelineId": "pipelineid", 
+        "Playlists": [], 
+        "Status": "Error", 
+        "Timing": {
+            "FinishTimeMillis": 1470241186817, 
+            "StartTimeMillis": 1470241185389, 
+            "SubmitTimeMillis": 1470241183473
+        }
+    }, 
+    "ResponseMetadata": {
+        "HTTPHeaders": {
+            "content-length": "1879", 
+            "content-type": "application/json", 
+            "date": "Wed, 03 Aug 2016 16:19:47 GMT", 
+            "x-amzn-requestid": "18758504-5996-11e6-8680-edf6b53e3044"
+        }, 
+        "HTTPStatusCode": 200, 
+        "RequestId": "18758504-5996-11e6-8680-edf6b53e3044"
+    }
+}
