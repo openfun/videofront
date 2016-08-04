@@ -2,4 +2,3 @@ Django==1.9.8
 djangorestframework==3.4.0
 celery==3.1.23
 django-celery==3.1.17
-requests==2.10.0

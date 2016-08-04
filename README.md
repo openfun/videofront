@@ -37,11 +37,7 @@ It's a good idea to create a user; the following command will automatically gene
 
     ./manage.py createuser chucknorris fantasticpassword
 
-You can then try to upload a video to test your infrastructure:
-
-    ./scripts/uploadvideo --token chucknorrishasatoken /path/to/myvideo.mp4
-
-Note that you will need a running videofront server and celery workers to make this command work.
+Using the [videofront-client](https://github.com/openfun/videofront-client) package, you can then try to upload a video to test your infrastructure.
 
 ## Development
 
