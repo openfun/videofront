@@ -12,10 +12,6 @@ class DummyPlugin(object):
 
 class PipelinePluginsTests(TestCase):
 
-    def test_load_all_plugins(self):
-        plugins.load('GET_UPLOAD_URL')
-        plugins.load('GET_UPLOADED_VIDEO')
-
     @override_settings(PLUGINS={})
     def test_undefined_plugin(self):
         self.assertRaises(plugins.UndefinedPlugin, plugins.load, "DUMMY")

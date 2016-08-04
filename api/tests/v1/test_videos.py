@@ -10,7 +10,7 @@ from pipeline import models
 from pipeline.tests.utils import override_plugins
 
 
-class ApiV1VideosUnauthenticatedTests(TestCase):
+class VideosUnauthenticatedTests(TestCase):
 
     def test_list_videos(self):
         url = reverse("api:v1:video-list")
@@ -19,13 +19,45 @@ class ApiV1VideosUnauthenticatedTests(TestCase):
         self.assertEqual(401, response.status_code)
 
 
-class ApiV1VideosTests(TestCase):
+class BaseAuthenticatedTests(TestCase):
 
     def setUp(self):
         user = User.objects.create(username="test", is_active=True)
         user.set_password("password")
         user.save()
         self.client.login(username="test", password="password")
+
+
+class VideoUploadUrlTests(BaseAuthenticatedTests):
+
+    def test_obtain_video_upload_url(self):
+        url = reverse("api:v1:videoupload-list")
+
+        get_upload_url = Mock(return_value={
+            'url': 'http://example.com',
+            'method': 'POST',
+            'id': 'videoid',
+            'expires_at': 0,
+        })
+        with override_plugins(GET_UPLOAD_URL=get_upload_url):
+            response = self.client.post(url, {'filename': 'Some file.mp4'})
+
+        self.assertEqual(200, response.status_code)
+        upload_url = response.json()
+        get_upload_url.assert_called_once_with('Some file.mp4')
+        self.assertIn("url", upload_url)
+        self.assertEqual("http://example.com", upload_url["url"])
+        self.assertIn("method", upload_url)
+        self.assertEqual("POST", upload_url["method"])
+
+
+    def test_get_fails_on_videoupload(self):
+        url = reverse("api:v1:videoupload-list")
+        response = self.client.get(url)
+        self.assertEqual(405, response.status_code) # method not allowed
+
+
+class VideosTests(BaseAuthenticatedTests):
 
     def test_list_videos(self):
         url = reverse("api:v1:video-list")
@@ -87,29 +119,6 @@ class ApiV1VideosTests(TestCase):
                 "title": "sometitle"
             }
         )
-        self.assertEqual(405, response.status_code) # method not allowed
-
-    def test_obtain_video_upload_url(self):
-        url = reverse("api:v1:videoupload-list")
-
-        get_upload_url = lambda: {
-            'url': 'http://example.com',
-            'method': 'POST',
-            'id': 'videoid',
-            'expires_at': 0,
-        }
-        with override_plugins(GET_UPLOAD_URL=get_upload_url):
-            response = self.client.post(url)
-
-        upload_url = response.json()
-        self.assertIn("url", upload_url)
-        self.assertEqual("http://example.com", upload_url["url"])
-        self.assertIn("method", upload_url)
-        self.assertEqual("POST", upload_url["method"])
-
-    def test_get_fails_on_videoupload(self):
-        url = reverse("api:v1:videoupload-list")
-        response = self.client.get(url)
         self.assertEqual(405, response.status_code) # method not allowed
 
     @override_plugins(

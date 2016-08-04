@@ -23,8 +23,16 @@ class TasksTests(TestCase):
                 raise exceptions.VideoNotUploaded
         transcode_video = mock.Mock(return_value=[100])
 
-        models.VideoUploadUrl.objects.create(public_video_id='videoid1', expires_at=time() + 3600)
-        models.VideoUploadUrl.objects.create(public_video_id='videoid2', expires_at=time() + 3600)
+        models.VideoUploadUrl.objects.create(
+            public_video_id='videoid1',
+            filename="video1.mp4",
+            expires_at=time() + 3600
+        )
+        models.VideoUploadUrl.objects.create(
+            public_video_id='videoid2',
+            filename="video2.mp4",
+            expires_at=time() + 3600
+        )
 
         with override_plugins(
                 GET_UPLOADED_VIDEO=get_uploaded_video,
@@ -34,6 +42,8 @@ class TasksTests(TestCase):
 
         self.assertFalse(models.VideoUploadUrl.objects.get(public_video_id='videoid1').was_used)
         self.assertTrue(models.VideoUploadUrl.objects.get(public_video_id='videoid2').was_used)
+        self.assertEqual(1, models.Video.objects.count())
+        self.assertEqual('video2.mp4', models.Video.objects.get().title)
         transcode_video.assert_called_once_with('videoid2')
 
     def test_monitor_uploads_with_one_expired_url(self):

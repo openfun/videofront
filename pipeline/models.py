@@ -39,6 +39,10 @@ class VideoUploadUrl(models.Model):
         unique=True,
         validators=[MinLengthValidator(1)]
     )
+    filename = models.CharField(
+        verbose_name="Uploaded file name",
+        max_length=128,
+    )
     expires_at = models.IntegerField(
         verbose_name="Timestamp at which the url expires",
         db_index=True

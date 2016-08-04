@@ -51,8 +51,10 @@ def monitor_uploads(public_video_ids=None):
         upload_url.save()
 
         # Create corresponding video
-        # TODO what title?
-        models.Video.objects.get_or_create(public_id=upload_url.public_video_id)
+        models.Video.objects.create(
+            public_id=upload_url.public_video_id,
+            title=upload_url.filename,
+        )
 
         # Start transcoding
         send_task('transcode_video', args=(upload_url.public_video_id,))
@@ -76,7 +78,6 @@ def _transcode_video(public_video_id):
     # Create video and transcoding objects
     # get_or_create is necessary here, because we want to be able to run
     # transcoding jobs multiple times for the same video (idempotent)
-    # TODO when is the title set?
     video, _created = models.Video.objects.get_or_create(public_id=public_video_id)
     video_transcoding, _created = models.VideoTranscoding.objects.get_or_create(video=video)
     video_transcoding.progress = 0

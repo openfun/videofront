@@ -1,5 +1,6 @@
 from time import sleep
 from django.http import Http404
+from rest_framework import exceptions
 from rest_framework import mixins
 from rest_framework import viewsets
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
@@ -61,5 +62,10 @@ class VideoUploadViewSet(viewsets.ViewSet):
     permission_classes = PERMISSION_CLASSES
 
     def create(self, request):
-        url_info = get_upload_url()
+        filename = request.data.get('filename')
+        if not filename:
+            raise exceptions.ValidationError("Missing filename parameter")
+        if len(filename) > 128:
+            raise exceptions.ValidationError("Invalid filename parameter (> 128 characters)")
+        url_info = get_upload_url(filename)
         return Response(url_info)

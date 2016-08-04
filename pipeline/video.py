@@ -1,4 +1,3 @@
-from . import exceptions
 from . import models
 from . import plugins
 
@@ -21,12 +20,12 @@ def base_get_uploaded_video(video_id):
     """
     Get the video file for which an upload url was generated.
 
+    This function is only used to check whether an upload url has been used or not.
+
     If the upload url has not been used yet, this function should raise a
     VideoNotUploaded exception.
 
-    The return value will be unused.
-
-    This function is only used to check whether an upload url has been used or not.
+    The return value is not used.
     """
     raise NotImplementedError
 
@@ -47,20 +46,21 @@ def base_delete_resources(video_id):
     raise NotImplementedError
 
 
-def get_upload_url():
+def get_upload_url(filename):
     """
     Obtain a video upload url.
 
     Returns: same value as `base_get_upload_url`.
     """
-    upload_url = plugins.call("GET_UPLOAD_URL")
+    upload_url = plugins.call("GET_UPLOAD_URL", filename)
 
     public_video_id = upload_url["id"]
     expires_at = upload_url['expires_at']
 
     models.VideoUploadUrl.objects.create(
         public_video_id=public_video_id,
-        expires_at=expires_at
+        expires_at=expires_at,
+        filename=filename
     )
 
     return upload_url
