@@ -1,2 +1,4 @@
+-r aws.txt
+
 mock==2.0.0
 coverage

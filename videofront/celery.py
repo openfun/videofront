@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import os
 
 from celery import Celery
@@ -41,7 +39,3 @@ def send_task(name, args=None, kwargs=None, **opts):
         return task.apply(args=args, kwargs=kwargs, **opts)
     else:
         return app.send_task(name, args=args, kwargs=kwargs)
-
-@app.task(bind=True)
-def debug_task(self):
-    print('Request: {0!r}'.format(self.request))

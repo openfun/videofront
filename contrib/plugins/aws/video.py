@@ -65,7 +65,7 @@ def transcode_video(public_video_id):
     # Start transcoding jobs
     jobs = []
     src_file_key = get_src_file_key(public_video_id)
-    for resolution, preset_id in settings.ELASTIC_TRANSCODER_PRESETS.iteritems():
+    for resolution, preset_id in settings.ELASTIC_TRANSCODER_PRESETS.items():
         job = elastictranscoder.create_job(
             PipelineId=pipeline_id,
             Input={'Key': src_file_key},

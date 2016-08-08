@@ -15,7 +15,8 @@ Install non-python requirements:
 
 Install python requirements in a virtual environment:
 
-    virtualenv venv && source venv/bin/activate
+    virtualenv --python=python3 venv # note that python3 is required
+    source venv/bin/activate
     pip install -r requirements/base.txt
 
 If you wish to interact with Amazon Web Services, additional dependencies need to be installed:
