@@ -28,10 +28,6 @@ Create database tables:
     ./manage.py migrate
     ./manage.py createcachetable
 
-Run a development server on port 9000:
-
-    ./manage.py runserver 9000
-
 ## Usage
 
 It's a good idea to create a user; the following command will automatically generate an authentication token, useful for later calls to the API:
@@ -56,17 +52,15 @@ Check test coverage:
     coverage run ./manage.py tet
     coverage report
 
+Run a development server on port 9000:
+
+    ./manage.py runserver 9000
+
+Start a celery worker for periodic and non-periodic tasks:
+
+    celery -A videofront worker -B # don't do this in production
+
 ## Deployment
-
-Test production settings locally:
-
-    DJANGO_SETTINGS_MODULE=videofront.settings_prod ./manage.py runserver
-
-Run celery workers:
-
-    export DJANGO_SETTINGS_MODULE=videofront.settings_prod 
-    celery -A videofront worker
-    celery -A videofront beat # periodic tasks
 
 Depending on your infrastructure, you will need to use different settings in production. In videofront, the same task can be performed by different plugins. You will have to choose the right implementation for each plugin. For instance, if you wish to store files on Amazon S3, then upload urls will have to be generated for S3 and the following plugin will have to be overridden in the production settings:
 
@@ -75,7 +69,17 @@ Depending on your infrastructure, you will need to use different settings in pro
     PLUGINS["GET_UPLOAD_URL"] = "contrib.plugins.aws.video.get_upload_url"
     ...
 
-Note that if you need to access AWS services, the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` setting variables will have to be defined.
+Note that if you need to access AWS services, you will have to define various AWS-specific setting variables described in settings_prod_sample.py
+
+Test production settings locally:
+
+    export DJANGO_SETTINGS_MODULE=videofront.settings_prod 
+    ./manage.py runserver
+
+Run celery workers:
+
+    celery -A videofront worker
+    celery -A videofront beat # periodic tasks
 
 ## License
 

@@ -63,7 +63,7 @@ class VideosTests(BaseAuthenticatedTests):
         url = reverse("api:v1:video-list")
         # TODO test video list requires just one query
         response = self.client.get(url)
-        videos = json.loads(response.content)
+        videos = response.json()
 
         self.assertEqual(200, response.status_code)
         self.assertEqual([], videos)

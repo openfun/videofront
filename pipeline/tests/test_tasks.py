@@ -46,6 +46,13 @@ class TasksTests(TestCase):
         self.assertEqual('video2.mp4', models.Video.objects.get().title)
         transcode_video.assert_called_once_with('videoid2')
 
+    def test_monitor_uploads_task(self):
+        tasks.monitor_uploads_task()
+
+        # Check lock is available
+        tasks.acquire_lock('MONITOR_UPLOADS_TASK_LOCK')
+
+
     def test_monitor_uploads_with_one_expired_url(self):
         models.VideoUploadUrl.objects.create(public_video_id='videoid', expires_at=time() - 7200,
                                              was_used=False, last_checked=None)

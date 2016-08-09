@@ -51,7 +51,7 @@ class VideoUploadUrlTests(TestCase):
 
         aws_video.get_uploaded_video('key')
         mock_s3_client.return_value.list_objects.assert_called_once_with(
-            Bucket='dummys3storagebucket', Prefix='videos/key/src/'
+            Bucket='dummys3storagebucket_private', Prefix='videos/key/src/'
         )
 
     @patch('contrib.plugins.aws.client.s3_client')
@@ -61,6 +61,15 @@ class VideoUploadUrlTests(TestCase):
         }))
 
         self.assertRaises(pipeline.exceptions.VideoNotUploaded, aws_video.get_uploaded_video, 'key')
+
+    @patch('contrib.plugins.aws.client.s3_client')
+    def test_delete_resources_no_content(self, mock_s3_client):
+        mock_s3_client.return_value = Mock(list_objects=Mock(return_value={}))
+        aws_video.delete_resources('videoid')
+
+        mock_s3_client.return_value.list_objects.assert_any_call(
+            Bucket='dummys3storagebucket_private', Prefix='videos/videoid/'
+        )
 
 
 @utils.override_s3_settings

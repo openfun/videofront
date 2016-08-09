@@ -23,12 +23,16 @@ def release_lock(name):
 @shared_task(name='monitor_uploads')
 def monitor_uploads_task():
     # This task should not run if there is already another one running
+    lock = 'MONITOR_UPLOADS_TASK_LOCK'
     try:
-        acquire_lock('MONITOR_UPLOADS_TASK_LOCK', 3600)
+        acquire_lock(lock, 3600)
     except exceptions.LockUnavailable:
         return
 
-    monitor_uploads()
+    try:
+        monitor_uploads()
+    finally:
+        release_lock(lock)
 
 def monitor_uploads(public_video_ids=None):
     """
