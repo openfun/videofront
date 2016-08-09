@@ -6,7 +6,7 @@ from mock import Mock, patch
 from contrib.plugins.aws import backend as aws_backend
 import pipeline.backend
 import pipeline.exceptions
-import pipeline.video
+import pipeline.tasks
 from . import utils
 
 
@@ -15,7 +15,7 @@ class VideoUploadUrlTests(TestCase):
 
     @patch('contrib.plugins.aws.backend.time')
     @patch('pipeline.utils.generate_video_id')
-    def test_get_upload_url(self, mock_generate_video_id, mock_time):
+    def test_create_upload_url(self, mock_generate_video_id, mock_time):
         mock_time.return_value = 0
         backend = aws_backend.Backend()
         mock_generate_video_id.return_value = 'someid'
@@ -23,7 +23,7 @@ class VideoUploadUrlTests(TestCase):
             generate_presigned_url=Mock(return_value="http://someurl")
         )
 
-        upload_url = backend.get_upload_url('filename')
+        upload_url = backend.create_upload_url('filename')
 
         self.assertEqual({
             'method': 'PUT',
@@ -36,8 +36,8 @@ class VideoUploadUrlTests(TestCase):
     @patch('contrib.plugins.aws.backend.Backend.s3_client', Mock(
         generate_presigned_url=Mock(return_value="http://someurl")
     ))
-    def test_get_upload_url_compatibility(self):
-        upload_url = pipeline.video.get_upload_url('filename')
+    def test_create_upload_url_compatibility(self):
+        upload_url = pipeline.tasks.create_upload_url('filename')
         self.assertEqual('http://someurl', upload_url['url'])
 
     def test_get_successfuly_uploaded_video(self):

@@ -1,8 +1,8 @@
 class BaseBackend(object):
 
-    def get_upload_url(self, filename):
+    def create_upload_url(self, filename):
         """
-        Return upload urls for uploading video files.
+        Return an upload url for uploading video files.
 
         Args:
             filename (str): name of the file that will be uploaded

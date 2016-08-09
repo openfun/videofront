@@ -74,7 +74,7 @@ class Backend(pipeline.backend.BaseBackend):
     # Overridden methods
     ####################
 
-    def get_upload_url(self, filename):
+    def create_upload_url(self, filename):
         """
         Generate video upload urls for storage on Amazon S3
         """

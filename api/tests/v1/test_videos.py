@@ -33,18 +33,18 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
     def test_obtain_video_upload_url(self):
         url = reverse("api:v1:videoupload-list")
 
-        get_upload_url = Mock(return_value={
+        create_upload_url = Mock(return_value={
             'url': 'http://example.com',
             'method': 'POST',
             'id': 'videoid',
             'expires_at': 0,
         })
-        with override_plugin_backend(get_upload_url=get_upload_url):
+        with override_plugin_backend(create_upload_url=create_upload_url):
             response = self.client.post(url, {'filename': 'Some file.mp4'})
 
         self.assertEqual(200, response.status_code)
         upload_url = response.json()
-        get_upload_url.assert_called_once_with('Some file.mp4')
+        create_upload_url.assert_called_once_with('Some file.mp4')
         self.assertIn("url", upload_url)
         self.assertEqual("http://example.com", upload_url["url"])
         self.assertIn("method", upload_url)

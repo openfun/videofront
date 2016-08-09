@@ -19,6 +19,29 @@ def acquire_lock(name, expires_in=None):
 def release_lock(name):
     cache.delete(name)
 
+def create_upload_url(filename):
+    """
+    Create an unused video upload url.
+
+    Returns: {
+        'url' (str): url on which the video file can be sent
+        'method': 'GET', 'POST' or 'PUT'
+        'expires_at': timestamp at which the url will expire
+        'id': public video id
+    }
+    """
+    upload_url = plugins.load().create_upload_url(filename)
+
+    public_video_id = upload_url["id"]
+    expires_at = upload_url['expires_at']
+
+    models.VideoUploadUrl.objects.create(
+        public_video_id=public_video_id,
+        expires_at=expires_at,
+        filename=filename
+    )
+
+    return upload_url
 
 @shared_task(name='monitor_uploads')
 def monitor_uploads_task():
