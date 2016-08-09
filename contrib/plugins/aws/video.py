@@ -28,7 +28,7 @@ def get_upload_url(filename):
     Generate video upload urls for storage on Amazon S3
     """
     s3 = aws_client.s3_client()
-    bucket = settings.S3_PRIVATE_BUCKET
+    bucket = settings.S3_BUCKET
     video_id = generate_video_id()
     expires_at = time() + 3600
     url = s3.generate_presigned_url(
@@ -111,7 +111,7 @@ def get_src_file_key(public_video_id):
     Returns None if no source file exists.
     """
     s3 = aws_client.s3_client()
-    bucket = settings.S3_PRIVATE_BUCKET
+    bucket = settings.S3_BUCKET
     src_folder_key = get_video_folder_key(public_video_id) + 'src/'
     objects = s3.list_objects(Bucket=bucket, Prefix=src_folder_key)
     if objects.get('Contents'):
@@ -120,11 +120,11 @@ def get_src_file_key(public_video_id):
 
 def delete_resources(public_video_id):
     s3 = aws_client.s3_client()
-    for bucket in [settings.S3_PRIVATE_BUCKET, settings.S3_PUBLIC_BUCKET]:
-        folder = get_video_folder_key(public_video_id)
-        list_objects = s3.list_objects(Bucket=bucket, Prefix=folder)
-        for obj in list_objects.get('Contents', []):
-            s3.delete_object(
-                Bucket=bucket,
-                Key=obj['Key']
-            )
+    bucket = settings.S3_BUCKET
+    folder = get_video_folder_key(public_video_id)
+    list_objects = s3.list_objects(Bucket=bucket, Prefix=folder)
+    for obj in list_objects.get('Contents', []):
+        s3.delete_object(
+            Bucket=bucket,
+            Key=obj['Key']
+        )

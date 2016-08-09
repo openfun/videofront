@@ -9,8 +9,7 @@ class Command(BaseCommand):
     help = 'Bootstrap S3 for video file storage'
 
     def handle(self, *args, **options):
-        self.create_bucket(settings.S3_PRIVATE_BUCKET, 'private')
-        self.create_bucket(settings.S3_PUBLIC_BUCKET, 'public-read')
+        self.create_bucket(settings.S3_BUCKET, 'private')
 
     def create_bucket(self, bucket_name, acl):
         s3 = s3_client()

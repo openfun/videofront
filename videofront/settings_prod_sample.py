@@ -13,11 +13,8 @@ AWS_ACCESS_KEY_ID = 'awsaccesskey'
 AWS_SECRET_ACCESS_KEY = 'awssecretaccesskey'
 AWS_REGION = 'eu-west-1' # http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions
 
-# You could use the same (private or public) bucket for both settings; however,
-# it is recommended to use a public bucket for transcoded video and assets, and
-# a private bucket for storing source files.
-S3_PRIVATE_BUCKET = 'privatebucket'
-S3_PUBLIC_BUCKET = 'publicbucket'
+# This is the bucket that will store all video assets.
+S3_BUCKET = 's3bucket'
 
 ELASTIC_TRANSCODER_PIPELINE_ID = 'yourpipelineid'
 ELASTIC_TRANSCODER_PRESETS = {

@@ -51,7 +51,7 @@ class VideoUploadUrlTests(TestCase):
 
         aws_video.get_uploaded_video('key')
         mock_s3_client.return_value.list_objects.assert_called_once_with(
-            Bucket='dummys3storagebucket_private', Prefix='videos/key/src/'
+            Bucket='dummys3storagebucket', Prefix='videos/key/src/'
         )
 
     @patch('contrib.plugins.aws.client.s3_client')
@@ -68,7 +68,7 @@ class VideoUploadUrlTests(TestCase):
         aws_video.delete_resources('videoid')
 
         mock_s3_client.return_value.list_objects.assert_any_call(
-            Bucket='dummys3storagebucket_private', Prefix='videos/videoid/'
+            Bucket='dummys3storagebucket', Prefix='videos/videoid/'
         )
 
 

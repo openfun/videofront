@@ -92,6 +92,7 @@ def _transcode_video(public_video_id):
     try:
         for progress in plugins.call('TRANSCODE_VIDEO', public_video_id):
             video_transcoding.progress = progress
+            video_transcoding.status = models.VideoTranscoding.STATUS_PROCESSING
             video_transcoding.save()
     except exceptions.TranscodingFailed as e:
         video_transcoding.status = models.VideoTranscoding.STATUS_FAILED
