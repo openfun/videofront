@@ -15,19 +15,9 @@ app.config_from_object('django.conf:settings')
 # Load automatically all tasks from all installed apps. Note that in order to
 # call tasks by name, you will have to manually import your task files in your
 # app/__init__.py file.
-app.autodiscover_tasks(lambda: settings.INSTALLED_APPS) 
+app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 
 
-# TODO do we want to keep this function?
-def send_task_if_registered(name, args=None, kwargs=None, **opts):
-    """
-    Send a task if it was registered. This is useful for optional tasks that
-    might not be implemented by all plugins.
-    """
-    if name in app.tasks:
-        return send_task(name, args=args, kwargs=kwargs, **opts)
-
-# TODO do we want to keep this function?
 def send_task(name, args=None, kwargs=None, **opts):
     """
     Send a task by name. Contrary to app.send_task, this function respects the
