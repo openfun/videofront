@@ -112,7 +112,7 @@ class Backend(pipeline.backend.BaseBackend):
         # Start transcoding jobs
         jobs = []
         src_file_key = self.get_src_file_key(public_video_id)
-        for resolution, preset_id in settings.ELASTIC_TRANSCODER_PRESETS.items():
+        for resolution, preset_id in settings.ELASTIC_TRANSCODER_PRESETS:
             job = self.elastictranscoder_client.create_job(
                 PipelineId=pipeline_id,
                 Input={'Key': src_file_key},

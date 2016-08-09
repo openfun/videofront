@@ -74,8 +74,10 @@ class VideosTests(BaseAuthenticatedTests):
         response = self.client.get(reverse('api:v1:video-detail', kwargs={'id': 'videoid'}))
         self.assertEqual(200, response.status_code)
         video = response.json()
+
         self.assertEqual('videoid', video['id'])
         self.assertEqual('Some title', video['title'])
+        self.assertEqual([], video['subtitles'])
 
     def test_get_not_processing_video(self):
         models.Video.objects.create(public_id="videoid", title='videotitle')
@@ -153,3 +155,20 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual(204, response.status_code)
         self.assertEqual(0, models.Video.objects.count())
         mock_delete_resources.assert_called_once_with('videoid')
+
+    def test_get_video_with_subtitles(self):
+        video = models.Video.objects.create(public_id="videoid")
+        video.subtitles.create(language="fr", public_id="subid1")
+        video.subtitles.create(language="en", public_id="subid2")
+
+        video = self.client.get(reverse("api:v1:video-detail", kwargs={'id': 'videoid'})).json()
+        self.assertEqual([
+            {
+                'id': 'subid1',
+                'language': 'fr'
+            },
+            {
+                'id': 'subid2',
+                'language': 'en'
+            },
+        ], video['subtitles'])

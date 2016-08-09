@@ -1,3 +1,4 @@
+from django.conf.global_settings import LANGUAGES
 from django.core.validators import MinLengthValidator, MinValueValidator, MaxValueValidator
 from django.db import models
 
@@ -7,7 +8,7 @@ from . import managers
 class Video(models.Model):
     title = models.CharField(max_length=100)
     public_id = models.CharField(
-        verbose_name="Public video ID", max_length=20, unique=True,
+        max_length=20, unique=True,
         validators=[MinLengthValidator(1)]
     )
 
@@ -32,7 +33,6 @@ class VideoUploadUrl(models.Model):
     normally.
     """
     public_video_id = models.CharField(
-        verbose_name="Public video ID",
         max_length=20,
         unique=True,
         validators=[MinLengthValidator(1)]
@@ -46,7 +46,7 @@ class VideoUploadUrl(models.Model):
         db_index=True
     )
     was_used = models.BooleanField(
-        verbose_name="Was the upload url used",
+        verbose_name="Was the upload url used?",
         default=False,
         db_index=True
     )
@@ -88,3 +88,22 @@ class VideoTranscoding(models.Model):
         choices=STATUSES
     )
     message = models.CharField(max_length=1024, blank=True)
+
+
+class VideoSubtitles(models.Model):
+
+    video = models.ForeignKey(Video, related_name='subtitles')
+    public_id = models.CharField(
+        max_length=20, unique=True,
+        validators=[MinLengthValidator(1)]
+    )
+    language = models.CharField(
+        max_length=3,
+        choices=LANGUAGES
+    )
+
+
+class VideoFormat(models.Model):
+
+    video = models.ForeignKey(Video, related_name='resolutions')
+    name = models.CharField(max_length=128)

@@ -75,7 +75,7 @@ class VideoUploadUrlTests(TestCase):
 class TranscodeTests(TestCase):
 
     @override_settings(ELASTIC_TRANSCODER_PIPELINE_ID='pipelineid')
-    @override_settings(ELASTIC_TRANSCODER_PRESETS={'SD': 'presetid'})
+    @override_settings(ELASTIC_TRANSCODER_PRESETS=[('SD', 'presetid')])
     def test_transcode_video_success(self):
         create_job_fixture = utils.load_json_fixture('elastictranscoder_create_job.json')
         read_job_fixture = utils.load_json_fixture('elastictranscoder_read_job_complete.json')

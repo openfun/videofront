@@ -24,8 +24,3 @@ class PipelineBackendTests(TestCase):
 
         self.assertIsNotNone(dummy)
         self.assertEqual(42, dummy)
-
-    def test_backend_is_cachable(self):
-        backend1 = backend.get()
-        backend2 = backend.get()
-        self.assertTrue(backend1 is backend2)

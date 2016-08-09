@@ -2,8 +2,7 @@ from django.core.cache import cache
 from django.utils.timezone import now
 from celery import shared_task
 
-from videofront.celery import send_task
-from . import backend
+from videofront.celery_videofront import send_task
 from . import backend
 from . import exceptions
 from . import models
@@ -112,7 +111,7 @@ def transcode_video(public_video_id):
 
 def _transcode_video(public_video_id):
     """
-    This function is not thread-safe. It should only be run by the transcode_video task.
+    This function is not thread-safe. It should only be called by the transcode_video task.
     """
     # Create video and transcoding objects
     # get_or_create is necessary here, because we want to be able to run
@@ -129,16 +128,15 @@ def _transcode_video(public_video_id):
             video_transcoding.progress = progress
             video_transcoding.status = models.VideoTranscoding.STATUS_PROCESSING
             video_transcoding.save()
+        video_transcoding.progress = 100
+        video_transcoding.status = models.VideoTranscoding.STATUS_SUCCESS
     except exceptions.TranscodingFailed as e:
         video_transcoding.status = models.VideoTranscoding.STATUS_FAILED
         video_transcoding.message = e.message
         video_transcoding.save()
         delete_resources(public_video_id)
-        return
-
-    video_transcoding.progress = 100
-    video_transcoding.status = models.VideoTranscoding.STATUS_SUCCESS
-    video_transcoding.save()
+    finally:
+        video_transcoding.save()
 
 def delete_resources(public_video_id):
     # Delete source video and assets
