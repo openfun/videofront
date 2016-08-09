@@ -4,6 +4,9 @@ import pipeline.backend
 
 
 class TestPluginBackendFactory(object):
+    """
+    Factory of test plugin backends that implement only a selection of methods.
+    """
 
     def __init__(self, **kwargs):
         self.attributes = kwargs
@@ -20,5 +23,9 @@ class TestPluginBackend(pipeline.backend.BaseBackend):
     pass
 
 def override_plugin_backend(**kwargs):
-    # TODO document this
+    """
+    Override a selection of methods of the plugin backend, for test purposes.
+
+    Example: @override_plugin_backend(create_upload_url=lambda x: 42)
+    """
     return override_settings(PLUGIN_BACKEND=TestPluginBackendFactory(**kwargs))

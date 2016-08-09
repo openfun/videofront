@@ -3,9 +3,10 @@ from django.utils.timezone import now
 from celery import shared_task
 
 from videofront.celery import send_task
+from . import backend
+from . import backend
 from . import exceptions
 from . import models
-from . import plugins
 
 
 def acquire_lock(name, expires_in=None):
@@ -30,7 +31,7 @@ def create_upload_url(filename):
         'id': public video id
     }
     """
-    upload_url = plugins.load().create_upload_url(filename)
+    upload_url = backend.get().create_upload_url(filename)
 
     public_video_id = upload_url["id"]
     expires_at = upload_url['expires_at']
@@ -72,7 +73,7 @@ def monitor_uploads(public_video_ids=None):
         urls_queryset = urls_queryset.filter(public_video_id__in=public_video_ids)
     for upload_url in urls_queryset:
         try:
-            plugins.load().get_uploaded_video(upload_url.public_video_id)
+            backend.get().get_uploaded_video(upload_url.public_video_id)
             upload_url.was_used = True
         except exceptions.VideoNotUploaded:
             # Upload url was not used yet
@@ -124,7 +125,7 @@ def _transcode_video(public_video_id):
     video_transcoding.save()
 
     try:
-        for progress in plugins.load().transcode_video(public_video_id):
+        for progress in backend.get().transcode_video(public_video_id):
             video_transcoding.progress = progress
             video_transcoding.status = models.VideoTranscoding.STATUS_PROCESSING
             video_transcoding.save()
@@ -141,4 +142,4 @@ def _transcode_video(public_video_id):
 
 def delete_resources(public_video_id):
     # Delete source video and assets
-    plugins.load().delete_resources(public_video_id)
+    backend.get().delete_resources(public_video_id)
