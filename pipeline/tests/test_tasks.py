@@ -1,8 +1,10 @@
+from datetime import timedelta
 from time import time
-import mock
+from mock import Mock
 
 from django.test import TestCase
 from django.test.utils import override_settings
+from django.utils.timezone import now
 
 from pipeline import exceptions
 from pipeline import models
@@ -32,8 +34,8 @@ class TasksTests(TestCase):
             filename="video2.mp4",
             expires_at=time() + 3600
         )
-        mock_backend = mock.Mock(return_value=mock.Mock(
-            transcode_video=mock.Mock(return_value=[100]),
+        mock_backend = Mock(return_value=Mock(
+            transcode_video=Mock(return_value=[100]),
             get_uploaded_video=get_uploaded_video
         ))
 
@@ -61,7 +63,7 @@ class TasksTests(TestCase):
     def test_monitor_uploads_with_one_expired_url(self):
         models.VideoUploadUrl.objects.create(public_video_id='videoid', expires_at=time() - 7200,
                                              was_used=False, last_checked=None)
-        mock_backend = mock.Mock(return_value=mock.Mock(transcode_video=mock.Mock(return_value=[100])))
+        mock_backend = Mock(return_value=Mock(transcode_video=Mock(return_value=[100])))
         with override_settings(PLUGIN_BACKEND=mock_backend):
             tasks.monitor_uploads()
 
@@ -69,9 +71,40 @@ class TasksTests(TestCase):
         self.assertTrue(models.VideoUploadUrl.objects.get(public_video_id='videoid').was_used)
         mock_backend.return_value.transcode_video.assert_called_once_with('videoid')
 
+    def test_monitor_uploads_for_already_created_video(self):
+        models.VideoUploadUrl.objects.create(public_video_id='videoid',
+                                             expires_at=time() + 3600,
+                                             was_used=False,
+                                             last_checked=None)
+        models.Video.objects.create(public_id='videoid')
+
+        # Simulate a monitoring task that runs while the video has alreay been created
+        mock_backend = Mock(return_value=Mock(
+            transcode_video=Mock(return_value=[100])
+        ))
+        with override_settings(PLUGIN_BACKEND=mock_backend):
+            tasks.monitor_uploads()
+
+        mock_backend.return_value.transcode_video.assert_not_called()
+
+    def test_monitor_upload_of_url_with_last_checked_in_future(self):
+        last_checked = now() + timedelta(seconds=100)
+        models.VideoUploadUrl.objects.create(public_video_id='videoid',
+                                             expires_at=time() + 3600,
+                                             was_used=False,
+                                             last_checked=last_checked)
+
+        mock_backend = Mock(return_value=Mock(
+            get_uploaded_video=Mock(side_effect=exceptions.VideoNotUploaded)
+        ))
+        with override_settings(PLUGIN_BACKEND=mock_backend):
+            tasks.monitor_uploads()
+
+        self.assertEqual(last_checked, models.VideoUploadUrl.objects.get().last_checked)
+
     def test_transcode_video_success(self):
-        mock_backend = mock.Mock(return_value=mock.Mock(
-            transcode_video=mock.Mock(return_value=[100])
+        mock_backend = Mock(return_value=Mock(
+            transcode_video=Mock(return_value=[100])
         ))
 
         with override_settings(PLUGIN_BACKEND=mock_backend):

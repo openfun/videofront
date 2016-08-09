@@ -36,6 +36,10 @@ def monitor_uploads_task():
 
 def monitor_uploads(public_video_ids=None):
     """
+    Monitor upload urls to check whether there have been successful uploads.
+
+    Warning: this function should be thread-safe, since it can be called from an API view.
+
     Args:
         public_video_ids: if defined, limit search to these videos
     """
@@ -51,18 +55,24 @@ def monitor_uploads(public_video_ids=None):
             # Upload url was not used yet
             continue
         finally:
-            # Note that we also modify the last_checked attribute of unused urls
-            upload_url.last_checked = now()
+            # Notes:
+            # - we also modify the last_checked attribute of unused urls
+            # - if the last_checked attribute exists, we make sure to set a proper value
+            upload_url.last_checked = now() if upload_url.last_checked is None else max(upload_url.last_checked, now())
             upload_url.save()
 
         # Create corresponding video
-        models.Video.objects.create(
+        # Here, a get_or_create call is necessary to make sure that this
+        # function can run concurrently.
+        video, video_created = models.Video.objects.get_or_create(
             public_id=upload_url.public_video_id,
-            title=upload_url.filename,
         )
+        video.title = upload_url.filename
+        video.save()
 
         # Start transcoding
-        send_task('transcode_video', args=(upload_url.public_video_id,))
+        if video_created:
+            send_task('transcode_video', args=(upload_url.public_video_id,))
 
 @shared_task(name='transcode_video')
 def transcode_video(public_video_id):
