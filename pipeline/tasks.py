@@ -46,13 +46,14 @@ def monitor_uploads(public_video_ids=None):
     for upload_url in urls_queryset:
         try:
             plugins.call('GET_UPLOADED_VIDEO', upload_url.public_video_id)
+            upload_url.was_used = True
         except exceptions.VideoNotUploaded:
             # Upload url was not used yet
             continue
-
-        # Mark upload url as used
-        upload_url.was_used = True
-        upload_url.save()
+        finally:
+            # Note that we also modify the last_checked attribute of unused urls
+            upload_url.last_checked = now()
+            upload_url.save()
 
         # Create corresponding video
         models.Video.objects.create(

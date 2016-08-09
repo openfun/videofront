@@ -40,8 +40,13 @@ class TasksTests(TestCase):
         ):
             tasks.monitor_uploads()
 
-        self.assertFalse(models.VideoUploadUrl.objects.get(public_video_id='videoid1').was_used)
-        self.assertTrue(models.VideoUploadUrl.objects.get(public_video_id='videoid2').was_used)
+        url1 = models.VideoUploadUrl.objects.get(public_video_id='videoid1')
+        url2 = models.VideoUploadUrl.objects.get(public_video_id='videoid2')
+
+        self.assertFalse(url1.was_used)
+        self.assertTrue(url2.was_used)
+        self.assertIsNotNone(url1.last_checked)
+        self.assertIsNotNone(url2.last_checked)
         self.assertEqual(1, models.Video.objects.count())
         self.assertEqual('video2.mp4', models.Video.objects.get().title)
         transcode_video.assert_called_once_with('videoid2')
