@@ -61,8 +61,12 @@ class VideosTests(BaseAuthenticatedTests):
 
     def test_list_videos(self):
         url = reverse("api:v1:video-list")
-        # TODO test video list requires just one query
-        response = self.client.get(url)
+        with self.assertNumQueries(3):
+            # queries:
+            # 1) django session
+            # 2) user authentication
+            # 3) video fetching
+            response = self.client.get(url)
         videos = response.json()
 
         self.assertEqual(200, response.status_code)
