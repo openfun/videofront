@@ -12,25 +12,21 @@ class DummyPlugin(object):
 
 class PipelinePluginsTests(TestCase):
 
-    @override_settings(PLUGINS={})
+    @override_settings(PLUGIN_BACKEND=None)
     def test_undefined_plugin(self):
-        self.assertRaises(plugins.UndefinedPlugin, plugins.load, "DUMMY")
+        self.assertRaises(plugins.UndefinedPluginBackend, plugins.load)
 
-    @override_settings(PLUGINS={"DUMMY": "undefinedmodule.somewhere"})
+    @override_settings(PLUGIN_BACKEND="undefinedmodule.somewhere")
     def test_missing_plugin_module(self):
-        self.assertRaises(ImportError, plugins.load, "DUMMY")
+        self.assertRaises(ImportError, plugins.load)
 
-    @override_settings(PLUGINS={"DUMMY": "contrib.plugins.some_undefined_function"})
+    @override_settings(PLUGIN_BACKEND="contrib.plugins.some_undefined_function")
     def test_missing_plugin_class(self):
-        self.assertRaises(plugins.MissingPlugin, plugins.load, "DUMMY")
+        self.assertRaises(plugins.MissingPluginBackend, plugins.load)
 
-    @override_settings(PLUGINS={"DUMMY": lambda: 42})
+    @override_settings(PLUGIN_BACKEND=lambda: 42)
     def test_callable_plugin(self):
-        dummy = plugins.load("DUMMY")
+        dummy = plugins.load()
 
         self.assertIsNotNone(dummy)
-        self.assertEqual(42, dummy())
-
-    @override_settings(PLUGINS={"DUMMY": lambda: 42})
-    def test_plugins_call(self):
-        self.assertEqual(42, plugins.call('DUMMY'))
+        self.assertEqual(42, dummy)

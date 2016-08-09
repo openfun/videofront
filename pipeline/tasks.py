@@ -45,7 +45,7 @@ def monitor_uploads(public_video_ids=None):
         urls_queryset = urls_queryset.filter(public_video_id__in=public_video_ids)
     for upload_url in urls_queryset:
         try:
-            plugins.call('GET_UPLOADED_VIDEO', upload_url.public_video_id)
+            plugins.load().get_uploaded_video(upload_url.public_video_id)
             upload_url.was_used = True
         except exceptions.VideoNotUploaded:
             # Upload url was not used yet
@@ -91,7 +91,7 @@ def _transcode_video(public_video_id):
     video_transcoding.save()
 
     try:
-        for progress in plugins.call('TRANSCODE_VIDEO', public_video_id):
+        for progress in plugins.load().transcode_video(public_video_id):
             video_transcoding.progress = progress
             video_transcoding.status = models.VideoTranscoding.STATUS_PROCESSING
             video_transcoding.save()
@@ -108,4 +108,4 @@ def _transcode_video(public_video_id):
 
 def delete_resources(public_video_id):
     # Delete source video and assets
-    plugins.call('DELETE_RESOURCES', public_video_id)
+    plugins.load().delete_resources(public_video_id)

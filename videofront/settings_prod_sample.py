@@ -23,8 +23,4 @@ ELASTIC_TRANSCODER_PRESETS = {
     'HD': '1351620000001-000001', # System preset: Generic 1080p
 }
 
-# TODO perhaps we can just define a plugin backend from which all plugins will be loaded?
-PLUGINS["GET_UPLOAD_URL"] = "contrib.plugins.aws.video.get_upload_url"
-PLUGINS["GET_UPLOADED_VIDEO"] = "contrib.plugins.aws.video.get_uploaded_video"
-PLUGINS["TRANSCODE_VIDEO"] = "contrib.plugins.aws.video.transcode_video"
-PLUGINS["DELETE_RESOURCES"] = "contrib.plugins.aws.video.delete_resources"
+PLUGIN_BACKEND = "contrib.plugins.aws.backend.Backend"

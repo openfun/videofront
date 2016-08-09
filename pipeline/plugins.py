@@ -1,39 +1,35 @@
 import importlib
 from django.conf import settings
 
-def call(name, *args, **kwargs):
+def load():
     """
-    Load a plugin and call it with the specified arguments.
-    """
-    return load(name)(*args, **kwargs)
-
-def load(name):
-    """
-    Load a plugin based on the PLUGINS[name] setting.
+    Load a plugin backend based on the PLUGIN_BACKEND setting.
 
     Raises:
-        UndefinedPlugin in case of undefined setting
+        UndefinedPluginBackend in case of undefined setting
         ImportError in case of missing module
-        MissingPlugin in case of a missing plugin class definition
+        MissingPluginBackend in case of a missing plugin class definition
 
     """
-    setting = settings.PLUGINS.get(name)
+    setting = getattr(settings, 'PLUGIN_BACKEND')
     if setting is None:
-        raise UndefinedPlugin(name)
+        raise UndefinedPluginBackend()
 
     if hasattr(setting, '__call__'):
-        plugin_object = setting
+        backend_object = setting()
     else:
         module_name, object_name = setting.rsplit(".", 1)
-        plugin_module = importlib.import_module(module_name)
-        plugin_object = getattr(plugin_module, object_name, None)
-        if plugin_object is None:
-            raise MissingPlugin(name)
+        backend_module = importlib.import_module(module_name)
+        backend_class = getattr(backend_module, object_name, None)
+        if backend_class is None:
+            raise MissingPluginBackend(setting)
+        # TODO we should cache the plugin backend across calls
+        backend_object = backend_class()
 
-    return plugin_object
+    return backend_object
 
-class UndefinedPlugin(Exception):
+class UndefinedPluginBackend(Exception):
     pass
 
-class MissingPlugin(Exception):
+class MissingPluginBackend(Exception):
     pass

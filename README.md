@@ -62,14 +62,12 @@ Start a celery worker for periodic and non-periodic tasks:
 
 ## Deployment
 
-Depending on your infrastructure, you will need to use different settings in production. In videofront, the same task can be performed by different plugins. You will have to choose the right implementation for each plugin. For instance, if you wish to store files on Amazon S3, then upload urls will have to be generated for S3 and the following plugin will have to be overridden in the production settings:
+Depending on your infrastructure, you will need to use different settings in production. In videofront, the same task can be performed in different ways. You will have to choose the right implementation for each task. For instance, if you wish to store files on Amazon S3, then upload urls will have to be generated for S3. In practice, you will have to create a plugin backend that inherits from `pipeline.backend.BaseBackend` and modify accordingly the `PLUGIN_BACKEND` setting:
 
     # videofron/settings_prod_sample.py
-    ...
-    PLUGINS["GET_UPLOAD_URL"] = "contrib.plugins.aws.video.get_upload_url"
-    ...
+    PLUGIN_BACKEND "contrib.plugins.aws.backend.Backend"
 
-Note that if you need to access AWS services, you will have to define various AWS-specific setting variables described in settings_prod_sample.py
+Note that if you need to access AWS services, you will have to define various AWS-specific setting variables described in the documentation of `contrib.plugins.aws.backend.Backend`.
 
 Test production settings locally:
 

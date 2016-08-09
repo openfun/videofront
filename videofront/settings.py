@@ -141,13 +141,5 @@ CELERYBEAT_SCHEDULE = {
     },
 }
 
-# Plugins are objects (usually functions) that will be loaded dynamically in order to
-# provide some pieces of functionality. In order to override an existing
-# plugin, you just need to define a object (function, class or instance) that
-# provides the required feature.
-PLUGINS = {
-    'GET_UPLOAD_URL': 'pipeline.video.base_get_upload_url',
-    'GET_UPLOADED_VIDEO': 'pipeline.video.base_get_uploaded_video',
-    'TRANSCODE_VIDEO': 'pipeline.video.base_transcode_video',
-    'DELETE_RESOURCES': 'pipeline.video.base_delete_resources',
-}
+# Override this setting to provide your own custom implementation of pipeline tasks.
+PLUGIN_BACKEND = 'pipeline.backend.BaseBackend'

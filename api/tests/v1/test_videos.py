@@ -7,7 +7,7 @@ from django.test import TestCase
 from mock import Mock
 
 from pipeline import models
-from pipeline.tests.utils import override_plugins
+from pipeline.tests.utils import override_plugin_backend
 
 
 class VideosUnauthenticatedTests(TestCase):
@@ -39,7 +39,7 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
             'id': 'videoid',
             'expires_at': 0,
         })
-        with override_plugins(GET_UPLOAD_URL=get_upload_url):
+        with override_plugin_backend(get_upload_url=get_upload_url):
             response = self.client.post(url, {'filename': 'Some file.mp4'})
 
         self.assertEqual(200, response.status_code)
@@ -121,9 +121,9 @@ class VideosTests(BaseAuthenticatedTests):
         )
         self.assertEqual(405, response.status_code) # method not allowed
 
-    @override_plugins(
-        GET_UPLOADED_VIDEO=lambda video_id: None,
-        TRANSCODE_VIDEO=lambda video_id: [],
+    @override_plugin_backend(
+        get_uploaded_video=lambda video_id: None,
+        transcode_video=lambda video_id: [],
     )
     def test_get_video_that_was_just_uploaded(self):
         models.VideoUploadUrl.objects.create(
@@ -147,7 +147,7 @@ class VideosTests(BaseAuthenticatedTests):
     def test_delete_video(self):
         mock_delete_resources = Mock()
         models.Video.objects.create(public_id="videoid")
-        with override_plugins(DELETE_RESOURCES=mock_delete_resources):
+        with override_plugin_backend(delete_resources=mock_delete_resources):
             response = self.client.delete(reverse('api:v1:video-detail', kwargs={'id': 'videoid'}))
 
         self.assertEqual(204, response.status_code)
