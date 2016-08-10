@@ -91,6 +91,25 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
+    def upload_subtitles(self, video_id, subtitles_id, language_code, attachment):
+        """
+        Upload a video subtitles file
+
+        Args:
+
+            video_id (str)
+            subtitles_id (str)
+            language_code (str)
+            attachment (file object)
+        """
+        raise NotImplementedError
+
+    def get_subtitles_download_url(self, video_id, subtitles_id):
+        """
+        TODO document
+        """
+        raise NotImplementedError
+
 
 class UndefinedPluginBackend(Exception):
     pass

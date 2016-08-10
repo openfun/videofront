@@ -1,12 +1,17 @@
 from time import sleep
+
+from django.db import transaction
 from django.http import Http404
 from rest_framework import exceptions
 from rest_framework import mixins
+from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
+from rest_framework.decorators import detail_route
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from pipeline import backend
 from pipeline import models
 from pipeline import tasks
 from . import serializers
@@ -63,6 +68,32 @@ class VideoViewSet(mixins.RetrieveModelMixin,
         # Delete external resources
         super(VideoViewSet, self).perform_destroy(instance)
         tasks.delete_resources(instance.public_id)
+
+    @detail_route(methods=['POST'])
+    def subtitles(self, request, **kwargs):
+        """
+        Subtitles upload
+
+        The subtitles file must be added as an "attachment" file object.
+        """
+        video = self.get_object()
+        serializer = serializers.VideoSubtitlesSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        attachment = request.FILES.get("attachment")
+
+        if not attachment:
+            return Response({'attachment': "Missing attachment"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # We do this in an atomic transaction to avoid creating db object in
+        # case of upload failure
+        with transaction.atomic():
+            subtitles = serializer.save(video_id=video.id)
+            # TODO shouldn't we convert the subtitles to vtt, first?
+            # TODO shouldn't we limit the size of the subtitles?
+            backend.get().upload_subtitles(video.public_id, subtitles.public_id, subtitles.language, attachment)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class VideoUploadViewSet(viewsets.ViewSet):

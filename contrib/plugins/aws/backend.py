@@ -12,6 +12,7 @@ import pipeline.utils
 class Backend(pipeline.backend.BaseBackend):
     VIDEO_FOLDER_KEY_PATTERN = "videos/{video_id}/"
     VIDEO_KEY_PATTERN = VIDEO_FOLDER_KEY_PATTERN + "{resolution}.mp4"
+    SUBTITLES_KEY_PATTERN = VIDEO_FOLDER_KEY_PATTERN + "{subtitles_id}.srt"
 
     def __init__(self):
         self._session = None
@@ -56,6 +57,10 @@ class Backend(pipeline.backend.BaseBackend):
         """
         return cls.VIDEO_KEY_PATTERN.format(video_id=video_id, resolution=resolution)
 
+    @classmethod
+    def get_subtitles_key(cls, video_id, subtitles_id):
+        return cls.SUBTITLES_KEY_PATTERN.format(video_id=video_id, subtitles_id=subtitles_id)
+
     def get_src_file_key(self, public_video_id):
         """
         List objects in the video src folder in order to find the key associated to
@@ -80,7 +85,7 @@ class Backend(pipeline.backend.BaseBackend):
         Generate video upload urls for storage on Amazon S3
         """
         bucket = settings.S3_BUCKET
-        video_id = pipeline.utils.generate_video_id()
+        video_id = pipeline.utils.generate_random_id()
         expires_at = time() + 3600
         url = self.s3_client.generate_presigned_url(
             'put_object',
@@ -171,3 +176,23 @@ class Backend(pipeline.backend.BaseBackend):
             except ClientError:
                 continue
             yield resolution, bitrate
+
+    def upload_subtitles(self, video_id, subtitles_id, language_code, attachment):
+        # TODO test this
+        self.s3_client.put_object(
+            ACL='public-read',
+            Body=attachment,
+            Bucket=settings.S3_BUCKET,
+            Key=self.get_subtitles_key(video_id, subtitles_id),
+        )
+
+    def get_subtitles_download_url(self, video_id, subtitles_id):
+        # TODO test this
+        return (
+            "https://s3-{region}.amazonaws.com/{bucket}/" + self.SUBTITLES_KEY_PATTERN
+        ).format(
+            region=settings.AWS_REGION,
+            bucket=settings.S3_BUCKET,
+            video_id=video_id,
+            subtitles_id=subtitles_id,
+        )

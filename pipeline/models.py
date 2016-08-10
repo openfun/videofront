@@ -4,6 +4,7 @@ from django.db import models
 
 from . import backend
 from . import managers
+from . import utils
 
 
 class Video(models.Model):
@@ -96,12 +97,18 @@ class VideoSubtitles(models.Model):
     video = models.ForeignKey(Video, related_name='subtitles')
     public_id = models.CharField(
         max_length=20, unique=True,
-        validators=[MinLengthValidator(1)]
+        validators=[MinLengthValidator(1)],
+        default=utils.generate_random_id
     )
     language = models.CharField(
         max_length=3,
         choices=LANGUAGES
     )
+
+    @property
+    def download_url(self):
+        # TODO test this
+        return backend.get().get_subtitles_download_url(self.video.public_id, self.public_id)
 
 
 class VideoFormat(models.Model):

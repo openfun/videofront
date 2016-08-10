@@ -1,10 +1,11 @@
 import json
+from StringIO import StringIO
 from time import time
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
-from mock import Mock
+from mock import Mock, patch
 
 from pipeline import models
 from pipeline.tests.utils import override_plugin_backend
@@ -210,3 +211,63 @@ class VideosTests(BaseAuthenticatedTests):
                 'streaming_url': 'http://example.com/videoid/HD.mp4'
             },
         ], video['formats'])
+
+
+class VideoSubtitlesTests(BaseAuthenticatedTests):
+
+    @override_plugin_backend(upload_subtitles=lambda *args: None)
+    @patch('pipeline.utils.generate_random_id')
+    def test_upload_subtitles(self, mock_generate_random_id):
+        mock_generate_random_id.return_value = "pouac"
+        video = models.Video.objects.create(public_id="videoid")
+        url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
+        subfile = StringIO("some srt content in here")
+        response = self.client.post(
+            url,
+            data={
+                'language': 'fr',
+                'name': 'subs.srt', 'attachment': subfile
+            },
+        )
+
+        self.assertEqual(201, response.status_code)
+        subtitles = response.json()
+        self.assertLess(0, len(subtitles["id"]))
+        self.assertEqual("fr", subtitles["language"])
+        self.assertEqual(1, video.subtitles.count())
+
+    def test_upload_subtitles_invalid_language(self):
+        models.Video.objects.create(public_id="videoid")
+        url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
+        # only country codes are accepted
+        response = self.client.post(url, data={'language': 'french'})
+
+        self.assertEqual(400, response.status_code)
+        self.assertIn('language', response.json())
+        self.assertEqual(0, models.VideoSubtitles.objects.count())
+
+    def test_upload_subtitles_missing_attachment(self):
+        models.Video.objects.create(public_id="videoid")
+        url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
+        response = self.client.post(url, data={'language': 'fr'})
+
+        self.assertEqual(400, response.status_code)
+        self.assertIn('attachment', response.json())
+        self.assertEqual(0, models.VideoSubtitles.objects.count())
+
+    @patch('django.core.handlers.base.logger')# mute request logger
+    def test_upload_subtitles_failed_upload(self, mock_logger):
+        models.Video.objects.create(public_id="videoid")
+        url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
+        subfile = StringIO("some srt content in here")
+
+        upload_subtitles = Mock(side_effect=ValueError)
+        with override_plugin_backend(upload_subtitles=upload_subtitles):
+            self.assertRaises(ValueError, self.client.post, url,
+                data={
+                    'language': 'fr',
+                    'name': 'subs.srt', 'attachment': subfile
+                },
+            )
+
+        self.assertEqual(0, models.VideoSubtitles.objects.count())

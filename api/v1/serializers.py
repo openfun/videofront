@@ -12,9 +12,11 @@ class VideoTranscodingSerializer(serializers.ModelSerializer):
 
 class VideoSubtitlesSerializer(serializers.ModelSerializer):
     id = serializers.CharField(source='public_id', read_only=True)
+    video_id = serializers.CharField(source='video__id', read_only=True)
+    download_url = serializers.CharField(read_only=True)
 
     class Meta:
-        fields = ('id', 'language')
+        fields = ('id', 'language', 'video_id', 'download_url')
         model = models.VideoSubtitles
 
 

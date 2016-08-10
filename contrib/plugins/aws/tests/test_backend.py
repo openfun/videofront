@@ -15,11 +15,11 @@ from . import utils
 class VideoUploadUrlTests(TestCase):
 
     @patch('contrib.plugins.aws.backend.time')
-    @patch('pipeline.utils.generate_video_id')
-    def test_create_upload_url(self, mock_generate_video_id, mock_time):
+    @patch('pipeline.utils.generate_random_id')
+    def test_create_upload_url(self, mock_generate_random_id, mock_time):
         mock_time.return_value = 0
         backend = aws_backend.Backend()
-        mock_generate_video_id.return_value = 'someid'
+        mock_generate_random_id.return_value = 'someid'
         backend._s3_client = Mock(
             generate_presigned_url=Mock(return_value="http://someurl")
         )
