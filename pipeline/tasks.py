@@ -149,7 +149,8 @@ def _transcode_video(public_video_id):
                         success_job_indexes.append(job_index)
                 except exceptions.TranscodingFailed as e:
                     error_job_indexes.append(job_index)
-                    errors.append(e.message)
+                    error_message = e.args[0] if e.args else ""
+                    errors.append(error_message)
 
         video_transcoding.progress = sum(jobs_progress) * 1. / len(jobs)
         video_transcoding.status = models.VideoTranscoding.STATUS_PROCESSING
