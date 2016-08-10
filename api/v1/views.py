@@ -22,6 +22,9 @@ class VideoViewSet(mixins.RetrieveModelMixin,
                    mixins.DestroyModelMixin,
                    mixins.ListModelMixin,
                    viewsets.GenericViewSet):
+    """
+    List available videos.
+    """
     # Similar to a generic model viewset, but without creation features. Video
     # creation is only available through upload.
 
@@ -63,6 +66,9 @@ class VideoViewSet(mixins.RetrieveModelMixin,
 
 
 class VideoUploadViewSet(viewsets.ViewSet):
+    """
+    Generate video upload urls.
+    """
     authentication_classes = AUTHENTICATION_CLASSES
     permission_classes = PERMISSION_CLASSES
 
