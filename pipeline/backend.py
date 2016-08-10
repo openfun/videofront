@@ -34,18 +34,60 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
-    def transcode_video(self, video_id):
+    def create_transcoding_jobs(self, video_id):
         """
-        Run the transcoding job and monitor it.
+        Create and start transcoding jobs.
 
-        This function is an iterator on the task progress. It should periodically
-        yield the progress (float value between 0 and 100).
+        Returns:
+            jobs: iterable of arbitrary job objects. Each of these job objects
+            will be passed as argument to the `get_transcoding_job_progress`
+            method
+        """
+        raise NotImplementedError
+
+    def get_transcoding_job_progress(self, job):
+        """
+        Monitor the progress of a transcoding job. This method will be called
+        periodically by the transcoding task.
+
+        Args:
+            job: arbitrary object that was returned by the `create_transcoding_job` method
+
+        Returns:
+            progress (float): progress percentage with a value between 0 and 100
+            finished (bool): True if the job is finished
+
+        Raises:
+            TranscodingError in case of transcoding error. The exception
+            message will be logged in the transcoding job.
         """
         raise NotImplementedError
 
     def delete_resources(self, video_id):
         """
         Delete all resources associated to a video. E.g: in case of transcoding error.
+        """
+        raise NotImplementedError
+
+    def get_video_streaming_url(self, video_id, format_name):
+        """
+        Return the url from which the video can be streamed, with the given
+        format. This is the url that will be passed to the html5 video player.
+
+        Note that there will be one call to this method for every format and
+        for every video object, at every call to the videos API. So the result
+        of this method should either be fast, or cached.
+        """
+        raise NotImplementedError
+
+    def iter_available_formats(self, video_id):
+        """
+        Iterator on the available formats for that video. This method will be
+        called after transcoding has finished.
+
+        Yields:
+            format_name (str)
+            bitrate (float)
         """
         raise NotImplementedError
 

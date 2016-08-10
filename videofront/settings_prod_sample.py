@@ -22,9 +22,10 @@ AWS_REGION = 'eu-west-1' # http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/us
 # This is the bucket that will store all video assets.
 S3_BUCKET = 's3bucket'
 
-ELASTIC_TRANSCODER_PIPELINE_ID = 'yourpipelineid'
+# Presets are of the form: (name, ID, bitrate)
 ELASTIC_TRANSCODER_PRESETS = [
-    ('LD', '1351620000001-000030'), # System preset: Generic 480p 4:3
-    ('SD', '1351620000001-000010'), # System preset: Generic 720p
-    ('HD', '1351620000001-000001'), # System preset: Generic 1080p
+    ('LD', '1351620000001-000030', 900),  # System preset: Generic 480p 4:3
+    ('SD', '1351620000001-000010', 2400), # System preset: Generic 720p
+    ('HD', '1351620000001-000001', 5400), # System preset: Generic 1080p
 ]
+ELASTIC_TRANSCODER_PIPELINE_ID = 'yourpipelineid'

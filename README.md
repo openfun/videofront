@@ -60,6 +60,14 @@ Start a celery worker for periodic and non-periodic tasks:
 
     celery -A videofront worker -B # don't do this in production
 
+## Custom commands
+
+    # Create a user and print out the corresponding access token
+    ./manage.py createuser --admin username password
+
+    # Launch a new video transcoding job; useful if the transcoding job is stuck in pending state
+    ./manage.py transcode-video myvideoid
+
 ## Deployment
 
 Depending on your infrastructure, you will need to use different settings in production. In videofront, the same task can be performed in different ways. You will have to choose the right implementation for each task. For instance, if you wish to store files on Amazon S3, then upload urls will have to be generated for S3. In practice, you will have to create a plugin backend that inherits from `pipeline.backend.BaseBackend` and modify accordingly the `PLUGIN_BACKEND` setting:

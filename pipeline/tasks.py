@@ -1,3 +1,6 @@
+import logging
+
+from django.db.transaction import TransactionManagementError
 from django.core.cache import cache
 from django.utils.timezone import now
 from celery import shared_task
@@ -6,6 +9,9 @@ from videofront.celery_videofront import send_task
 from . import backend
 from . import exceptions
 from . import models
+
+
+logger = logging.getLogger(__name__)
 
 
 def acquire_lock(name, expires_in=None):
@@ -17,7 +23,15 @@ def acquire_lock(name, expires_in=None):
     raise exceptions.LockUnavailable(name)
 
 def release_lock(name):
-    cache.delete(name)
+    # Note that in unit tests, and in case the wrapped code raises an
+    # IntegrityError, releasing the cache will result in a
+    # TransactionManagementError. This is because unit tests run inside atomic
+    # blocks. We cannot execute queries inside an atomic block if a transaction
+    # needs to be rollbacked.
+    try:
+        cache.delete(name)
+    except TransactionManagementError:
+        logger.error("Could not release lock %s", name)
 
 def create_upload_url(filename):
     """
@@ -113,30 +127,50 @@ def _transcode_video(public_video_id):
     """
     This function is not thread-safe. It should only be called by the transcode_video task.
     """
-    # Create video and transcoding objects
-    # get_or_create is necessary here, because we want to be able to run
-    # transcoding jobs multiple times for the same video (idempotent)
-    video, _created = models.Video.objects.get_or_create(public_id=public_video_id)
+    video = models.Video.objects.get(public_id=public_video_id)
+    # Here We use get_or_create instead of create in order to be able to restart the transcoding job.
     video_transcoding, _created = models.VideoTranscoding.objects.get_or_create(video=video)
     video_transcoding.progress = 0
     video_transcoding.status = models.VideoTranscoding.STATUS_PENDING
     video_transcoding.started_at = now()
     video_transcoding.save()
 
-    try:
-        for progress in backend.get().transcode_video(public_video_id):
-            video_transcoding.progress = progress
-            video_transcoding.status = models.VideoTranscoding.STATUS_PROCESSING
-            video_transcoding.save()
-        video_transcoding.progress = 100
-        video_transcoding.status = models.VideoTranscoding.STATUS_SUCCESS
-    except exceptions.TranscodingFailed as e:
+    jobs = backend.get().create_transcoding_jobs(public_video_id)
+    success_job_indexes = []
+    error_job_indexes = []
+    errors = []
+    jobs_progress = [0] * len(jobs)
+    while len(success_job_indexes) + len(error_job_indexes) < len(jobs):
+        for job_index, job in enumerate(jobs):
+            if job_index not in success_job_indexes and job_index not in error_job_indexes:
+                try:
+                    jobs_progress[job_index], finished = backend.get().get_transcoding_job_progress(job)
+                    if finished:
+                        success_job_indexes.append(job_index)
+                except exceptions.TranscodingFailed as e:
+                    error_job_indexes.append(job_index)
+                    errors.append(e.message)
+
+        video_transcoding.progress = sum(jobs_progress) * 1. / len(jobs)
+        video_transcoding.status = models.VideoTranscoding.STATUS_PROCESSING
+        video_transcoding.save()
+
+    video_transcoding.message = "\n".join(errors)
+    models.VideoFormat.objects.filter(video=video).delete()
+    if errors:
+        # In case of errors, wipe all data
         video_transcoding.status = models.VideoTranscoding.STATUS_FAILED
-        video_transcoding.message = e.message
         video_transcoding.save()
         delete_resources(public_video_id)
-    finally:
+    else:
+        # Create video formats first so that they are available as soon as the
+        # video object becomes available from the API
+        for format_name, bitrate in backend.get().iter_available_formats(public_video_id):
+            models.VideoFormat.objects.create(video=video, name=format_name, bitrate=bitrate)
+
+        video_transcoding.status = models.VideoTranscoding.STATUS_SUCCESS
         video_transcoding.save()
+
 
 def delete_resources(public_video_id):
     # Delete source video and assets

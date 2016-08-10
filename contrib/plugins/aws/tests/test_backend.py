@@ -1,3 +1,4 @@
+from botocore.exceptions import ClientError
 from django.test import TestCase
 from django.test.utils import override_settings
 
@@ -70,34 +71,75 @@ class VideoUploadUrlTests(TestCase):
             Bucket='dummys3storagebucket', Prefix='videos/videoid/'
         )
 
+    @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')
+    def test_get_video_streaming_url(self):
+        backend = pipeline.backend.get()
+        self.assertIsNotNone(backend.get_video_streaming_url('videoid', 'SD'))
+
 
 @utils.override_s3_settings
 class TranscodeTests(TestCase):
 
     @override_settings(ELASTIC_TRANSCODER_PIPELINE_ID='pipelineid')
-    @override_settings(ELASTIC_TRANSCODER_PRESETS=[('SD', 'presetid')])
-    def test_transcode_video_success(self):
+    @override_settings(ELASTIC_TRANSCODER_PRESETS=[('SD', 'presetid', 128)])
+    def test_create_transcoding_jobs(self):
+        create_job_fixture = utils.load_json_fixture('elastictranscoder_create_job.json')
+        backend = aws_backend.Backend()
+
+        backend.get_src_file_key = Mock(return_value='videos/videoid/src/Some video file.mpg')
+        backend._elastictranscoder_client = Mock(
+            create_job=Mock(return_value=create_job_fixture),
+        )
+
+        jobs = backend.create_transcoding_jobs('videoid')
+
+        self.assertEqual(1, len(jobs))
+        backend.elastictranscoder_client.create_job.assert_called_once_with(
+            PipelineId='pipelineid',
+            Input={'Key': 'videos/videoid/src/Some video file.mpg'},
+            Output={'PresetId': 'presetid', 'Key': aws_backend.Backend.get_video_key('videoid', 'SD')}
+        )
+        backend.get_src_file_key.assert_called_once_with('videoid')
+
+    def test_get_transcoding_job_progress(self):
+        job = utils.load_json_fixture('elastictranscoder_create_job.json')
+        read_job_fixture = utils.load_json_fixture('elastictranscoder_read_job_complete.json')
+        backend = aws_backend.Backend()
+        backend._elastictranscoder_client = Mock(
+            read_job=Mock(return_value=read_job_fixture),
+        )
+
+        progress, finished = backend.get_transcoding_job_progress(job['Job'])
+        self.assertEqual(100, progress)
+        self.assertTrue(finished)
+        backend.elastictranscoder_client.read_job.assert_called_once_with(
+            Id='jobid' # job id in test fixture
+        )
+
+    @override_settings(ELASTIC_TRANSCODER_PIPELINE_ID='pipelineid')
+    @override_settings(ELASTIC_TRANSCODER_PRESETS=[('SD', 'presetid', 128)])
+    def test_transcoding_pipeline_compatibility(self):
         create_job_fixture = utils.load_json_fixture('elastictranscoder_create_job.json')
         read_job_fixture = utils.load_json_fixture('elastictranscoder_read_job_complete.json')
         backend = aws_backend.Backend()
-
         backend.get_src_file_key = Mock(return_value='videos/videoid/src/Some video file.mpg')
         backend._elastictranscoder_client = Mock(
             create_job=Mock(return_value=create_job_fixture),
             read_job=Mock(return_value=read_job_fixture)
         )
 
-        progress = 0
-        for progress in backend.transcode_video('videoid'):
-            pass
+        jobs = backend.create_transcoding_jobs('videoid')
+        backend.get_transcoding_job_progress(jobs[0])
 
-        self.assertEqual(100, progress)
-        backend.elastictranscoder_client.create_job.assert_called_once_with(
-            PipelineId='pipelineid',
-            Input={'Key': 'videos/videoid/src/Some video file.mpg'},
-            Output={'PresetId': 'presetid', 'Key': aws_backend.Backend.get_video_key('videoid', 'SD')}
-        )
-        backend.elastictranscoder_client.read_job.assert_called_once_with(
-            Id='jobid' # job id in test fixture
-        )
-        backend.get_src_file_key.assert_called_once_with('videoid')
+    @override_settings(ELASTIC_TRANSCODER_PRESETS=[('SD', 'presetid1', 128), ('HD', 'presetid2', 256)])
+    def test_iter_available_formats(self):
+        backend = aws_backend.Backend()
+
+        def head_object(Bucket=None, Key=None):
+            if Key != 'videos/videoid/HD.mp4':
+                raise ClientError({'Error': {}}, 'head_object')
+
+        backend.s3_client.head_object = head_object
+        formats = list(backend.iter_available_formats('videoid'))
+
+        self.assertEqual([('HD', 256)], formats)

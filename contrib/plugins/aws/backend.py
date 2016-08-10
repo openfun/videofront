@@ -1,5 +1,6 @@
 from time import time
 
+from botocore.exceptions import ClientError
 import boto3
 from django.conf import settings
 
@@ -106,50 +107,38 @@ class Backend(pipeline.backend.BaseBackend):
             # connection drops during upload.
             raise VideoNotUploaded
 
-    def transcode_video(self, public_video_id):
+    def create_transcoding_jobs(self, public_video_id):
         pipeline_id = settings.ELASTIC_TRANSCODER_PIPELINE_ID
 
-        # Start transcoding jobs
         jobs = []
         src_file_key = self.get_src_file_key(public_video_id)
-        for resolution, preset_id in settings.ELASTIC_TRANSCODER_PRESETS:
+        for resolution, preset_id, _bitrate in settings.ELASTIC_TRANSCODER_PRESETS:
             job = self.elastictranscoder_client.create_job(
                 PipelineId=pipeline_id,
                 Input={'Key': src_file_key},
                 Output={
-                    # Note that the transcoded video should be in the public bucket
+                    # Note that the transcoded video should have public-read permissions
                     'Key': self.get_video_key(public_video_id, resolution),
                     'PresetId': preset_id
                 }
             )
-            jobs.append(job)
+            jobs.append(job['Job'])
+        return jobs
 
-        # Monitor transcoding jobs
-        completed_jobs = []
-        error_jobs = []
-        error_message = None
-        while len(completed_jobs) + len(error_jobs) < len(jobs):
-            for job in jobs:
-                job_id = job['Job']['Id']
-                if job_id not in completed_jobs and job_id not in error_jobs:
-                    job_update = self.elastictranscoder_client.read_job(Id=job_id)
-                    job_status = job_update['Job']['Output']['Status']
-                    if job_status == 'Submitted' or job_status == 'Progressing':
-                        # Elastic Transcoder does not provide any indicator of the time left
-                        pass
-                    elif job_status == 'Complete':
-                        completed_jobs.append(job_id)
-                        yield len(completed_jobs) * 100. / len(jobs)
-                    elif job_status == 'Error':
-                        error_message = job_update['Job']['Output']['StatusDetail']
-                        error_jobs.append(job_id)
-                    else:
-                        raise TranscodingFailed('Unknown transcoding status: {}'.format(job_status))
-
-
-        if error_message is not None:
-            # We wait until transcoding is over to trigger an error
+    def get_transcoding_job_progress(self, job):
+        job_id = job['Id']
+        job_update = self.elastictranscoder_client.read_job(Id=job_id)
+        job_status = job_update['Job']['Output']['Status']
+        if job_status == 'Submitted' or job_status == 'Progressing':
+            # Elastic Transcoder does not provide any indicator of the time left
+            return 0, False
+        elif job_status == 'Complete':
+            return 100, True
+        elif job_status == 'Error':
+            error_message = job_update['Job']['Output']['StatusDetail']
             raise TranscodingFailed(error_message)
+        else:
+            raise TranscodingFailed('Unknown transcoding status: {}'.format(job_status))
 
     def delete_resources(self, public_video_id):
         bucket = settings.S3_BUCKET
@@ -160,3 +149,25 @@ class Backend(pipeline.backend.BaseBackend):
                 Bucket=bucket,
                 Key=obj['Key']
             )
+
+    def get_video_streaming_url(self, public_video_id, format_name):
+        # Note: this assumes that transcoded files are public
+        return (
+            "https://s3-{region}.amazonaws.com/{bucket}/" + self.VIDEO_KEY_PATTERN
+        ).format(
+            region=settings.AWS_REGION,
+            bucket=settings.S3_BUCKET,
+            video_id=public_video_id,
+            resolution=format_name,
+        )
+
+    def iter_available_formats(self, public_video_id):
+        for resolution, _preset_id, bitrate in settings.ELASTIC_TRANSCODER_PRESETS:
+            try:
+                self.s3_client.head_object(
+                    Bucket=settings.S3_BUCKET,
+                    Key=self.get_video_key(public_video_id, resolution)
+                )
+            except ClientError:
+                continue
+            yield resolution, bitrate

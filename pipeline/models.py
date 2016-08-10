@@ -2,6 +2,7 @@ from django.conf.global_settings import LANGUAGES
 from django.core.validators import MinLengthValidator, MinValueValidator, MaxValueValidator
 from django.db import models
 
+from . import backend
 from . import managers
 
 
@@ -105,5 +106,10 @@ class VideoSubtitles(models.Model):
 
 class VideoFormat(models.Model):
 
-    video = models.ForeignKey(Video, related_name='resolutions')
+    video = models.ForeignKey(Video, related_name='formats')
     name = models.CharField(max_length=128)
+    bitrate = models.FloatField(validators=[MinValueValidator(0)])
+
+    @property
+    def streaming_url(self):
+        return backend.get().get_video_streaming_url(self.video.public_id, self.name)

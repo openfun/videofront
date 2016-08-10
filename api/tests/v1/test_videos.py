@@ -59,13 +59,18 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
 
 class VideosTests(BaseAuthenticatedTests):
 
+    # queries:
+    # 1) django session
+    # 2) user authentication
+    # 3) video + transcoding job
+    VIDEOS_LIST_NUM_QUERIES_EMPTY_RESULT = 3
+    # 4) subtitles prefetch
+    # 5) formats prefetch
+    VIDEOS_LIST_NUM_QUERIES = VIDEOS_LIST_NUM_QUERIES_EMPTY_RESULT + 2
+
     def test_list_videos(self):
         url = reverse("api:v1:video-list")
-        with self.assertNumQueries(3):
-            # queries:
-            # 1) django session
-            # 2) user authentication
-            # 3) video fetching
+        with self.assertNumQueries(self.VIDEOS_LIST_NUM_QUERIES_EMPTY_RESULT):
             response = self.client.get(url)
         videos = response.json()
 
@@ -82,6 +87,7 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual('videoid', video['id'])
         self.assertEqual('Some title', video['title'])
         self.assertEqual([], video['subtitles'])
+        self.assertEqual([], video['formats'])
 
     def test_get_not_processing_video(self):
         models.Video.objects.create(public_id="videoid", title='videotitle')
@@ -129,7 +135,8 @@ class VideosTests(BaseAuthenticatedTests):
 
     @override_plugin_backend(
         get_uploaded_video=lambda video_id: None,
-        transcode_video=lambda video_id: [],
+        create_transcoding_jobs=lambda video_id: [],
+        iter_available_formats=lambda video_id: [],
     )
     def test_get_video_that_was_just_uploaded(self):
         models.VideoUploadUrl.objects.create(
@@ -165,7 +172,9 @@ class VideosTests(BaseAuthenticatedTests):
         video.subtitles.create(language="fr", public_id="subid1")
         video.subtitles.create(language="en", public_id="subid2")
 
-        video = self.client.get(reverse("api:v1:video-detail", kwargs={'id': 'videoid'})).json()
+        with self.assertNumQueries(self.VIDEOS_LIST_NUM_QUERIES):
+            video = self.client.get(reverse("api:v1:video-detail", kwargs={'id': 'videoid'})).json()
+
         self.assertEqual([
             {
                 'id': 'subid1',
@@ -176,3 +185,28 @@ class VideosTests(BaseAuthenticatedTests):
                 'language': 'en'
             },
         ], video['subtitles'])
+
+
+    @override_plugin_backend(
+        get_video_streaming_url=lambda video_id, format_name:
+            "http://example.com/{}/{}.mp4".format(video_id, format_name),
+        iter_available_formats=lambda video_id: [],
+    )
+    def test_get_video_with_formats(self):
+        video = models.Video.objects.create(public_id="videoid")
+        video.formats.create(name="SD", bitrate=128)
+        video.formats.create(name="HD", bitrate=256)
+
+        with self.assertNumQueries(self.VIDEOS_LIST_NUM_QUERIES):
+            video = self.client.get(reverse("api:v1:video-detail", kwargs={'id': 'videoid'})).json()
+
+        self.assertEqual([
+            {
+                'name': 'SD',
+                'streaming_url': 'http://example.com/videoid/SD.mp4'
+            },
+            {
+                'name': 'HD',
+                'streaming_url': 'http://example.com/videoid/HD.mp4'
+            },
+        ], video['formats'])

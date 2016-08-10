@@ -127,6 +127,24 @@ REST_FRAMEWORK = {
     )
 }
 
+# Logging
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        },
+    },
+}
+
 # Celery
 
 BROKER_URL = 'amqp://guest:guest@localhost:5672//'
