@@ -2,7 +2,7 @@ from botocore.exceptions import ClientError
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from contrib.plugins.aws.client import s3_client
+from contrib.plugins.aws.backend import Backend
 
 
 class Command(BaseCommand):
@@ -12,13 +12,13 @@ class Command(BaseCommand):
         self.create_bucket(settings.S3_BUCKET, 'private')
 
     def create_bucket(self, bucket_name, acl):
-        s3 = s3_client()
+        backend = Backend()
         try:
-            s3.head_bucket(Bucket=bucket_name)
+            backend.s3_client.head_bucket(Bucket=bucket_name)
             self.stdout.write("Bucket {} already exists".format(bucket_name))
         except ClientError:
             self.stdout.write("Creating bucket {}...".format(bucket_name))
-            s3.create_bucket(
+            backend.s3_client.create_bucket(
                 ACL=acl,
                 Bucket=bucket_name,
                 CreateBucketConfiguration={
