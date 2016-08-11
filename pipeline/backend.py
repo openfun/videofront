@@ -106,7 +106,9 @@ class BaseBackend(object):
 
     def get_subtitles_download_url(self, video_id, subtitles_id):
         """
-        TODO document
+        Returns the url at which the subtitles file can be downloaded. Note
+        that this method once for every subtitle object for every API videos
+        API call. So the result of this result should either be fast or cached.
         """
         raise NotImplementedError
 

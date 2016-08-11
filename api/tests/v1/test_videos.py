@@ -168,6 +168,9 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual(0, models.Video.objects.count())
         mock_delete_resources.assert_called_once_with('videoid')
 
+    @override_plugin_backend(
+        get_subtitles_download_url=lambda vid, sid: "http://example.com/{}.vtt".format(sid)
+    )
     def test_get_video_with_subtitles(self):
         video = models.Video.objects.create(public_id="videoid")
         video.subtitles.create(language="fr", public_id="subid1")
@@ -179,11 +182,13 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual([
             {
                 'id': 'subid1',
-                'language': 'fr'
+                'language': 'fr',
+                'download_url': 'http://example.com/subid1.vtt'
             },
             {
                 'id': 'subid2',
-                'language': 'en'
+                'language': 'en',
+                'download_url': 'http://example.com/subid2.vtt'
             },
         ], video['subtitles'])
 
@@ -215,7 +220,10 @@ class VideosTests(BaseAuthenticatedTests):
 
 class VideoSubtitlesTests(BaseAuthenticatedTests):
 
-    @override_plugin_backend(upload_subtitles=lambda *args: None)
+    @override_plugin_backend(
+        upload_subtitles=lambda *args: None,
+        get_subtitles_download_url=lambda *args: "http://example.com/subs.vtt"
+    )
     @patch('pipeline.utils.generate_random_id')
     def test_upload_subtitles(self, mock_generate_random_id):
         mock_generate_random_id.return_value = "pouac"
@@ -234,6 +242,7 @@ class VideoSubtitlesTests(BaseAuthenticatedTests):
         subtitles = response.json()
         self.assertLess(0, len(subtitles["id"]))
         self.assertEqual("fr", subtitles["language"])
+        self.assertEqual("http://example.com/subs.vtt", subtitles["download_url"])
         self.assertEqual(1, video.subtitles.count())
 
     def test_upload_subtitles_invalid_language(self):
