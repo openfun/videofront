@@ -172,7 +172,10 @@ def _transcode_video(public_video_id):
         video_transcoding.status = models.VideoTranscoding.STATUS_SUCCESS
         video_transcoding.save()
 
+def upload_subtitles(public_video_id, subtitles_id, language_code, attachment):
+    # TODO shouldn't we convert the subtitles to vtt, first?
+    backend.get().upload_subtitles(public_video_id, subtitles_id, language_code, attachment)
 
 def delete_resources(public_video_id):
-    # Delete source video and assets
+    """ Delete all video assets """
     backend.get().delete_resources(public_video_id)

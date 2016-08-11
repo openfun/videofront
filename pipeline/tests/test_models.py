@@ -1,5 +1,6 @@
 from time import time
 
+from django.db.utils import IntegrityError
 from django.utils.timezone import now
 from django.test import TestCase
 
@@ -41,3 +42,12 @@ class VideoUploadUrlTests(TestCase):
         self.assertIn('used_not_checked', should_check_video_ids)
         self.assertNotIn('used', should_check_video_ids)
         self.assertNotIn('expired', should_check_video_ids)
+
+class VideoSubtitlesTests(TestCase):
+
+    def test_empty_language_not_allowed(self):
+        video = models.Video.objects.create()
+        sub1 = models.VideoSubtitles.objects.create(language="fr", video=video)
+        self.assertTrue(sub1.public_id)
+
+        self.assertRaises(IntegrityError, models.VideoSubtitles.objects.create, video=video)

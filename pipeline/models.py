@@ -10,8 +10,12 @@ from . import utils
 class Video(models.Model):
     title = models.CharField(max_length=100)
     public_id = models.CharField(
-        max_length=20, unique=True,
-        validators=[MinLengthValidator(1)]
+        default=utils.generate_random_id,
+        unique=True,
+        max_length=20,
+        validators=[MinLengthValidator(1)],
+        blank=False,
+        null=True,
     )
 
     @property
@@ -35,9 +39,12 @@ class VideoUploadUrl(models.Model):
     normally.
     """
     public_video_id = models.CharField(
+        default=utils.generate_random_id,
         max_length=20,
         unique=True,
-        validators=[MinLengthValidator(1)]
+        validators=[MinLengthValidator(1)],
+        blank=False,
+        null=True,
     )
     filename = models.CharField(
         verbose_name="Uploaded file name",
@@ -94,6 +101,8 @@ class VideoTranscoding(models.Model):
 
 class VideoSubtitles(models.Model):
 
+    LANGUAGE_CHOICES = [(code, name) for code, name in LANGUAGES if len(code) == 2]
+
     video = models.ForeignKey(Video, related_name='subtitles')
     public_id = models.CharField(
         max_length=20, unique=True,
@@ -101,14 +110,18 @@ class VideoSubtitles(models.Model):
         default=utils.generate_random_id
     )
     language = models.CharField(
-        max_length=3,
-        choices=LANGUAGES
+        max_length=2,
+        validators=[MinLengthValidator(2)],
+        choices=LANGUAGE_CHOICES,
+        null=True,
+        blank=False
     )
 
     @property
     def download_url(self):
-        # TODO test this
-        return backend.get().get_subtitles_download_url(self.video.public_id, self.public_id)
+        return backend.get().get_subtitles_download_url(
+            self.video.public_id, self.public_id, self.language
+        )
 
 
 class VideoFormat(models.Model):

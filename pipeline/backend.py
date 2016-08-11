@@ -104,7 +104,7 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
-    def get_subtitles_download_url(self, video_id, subtitles_id):
+    def get_subtitles_download_url(self, video_id, subtitles_id, language_code):
         """
         Returns the url at which the subtitles file can be downloaded. Note
         that this method once for every subtitle object for every API videos

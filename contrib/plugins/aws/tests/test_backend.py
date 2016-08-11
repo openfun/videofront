@@ -143,3 +143,27 @@ class TranscodeTests(TestCase):
         formats = list(backend.iter_available_formats('videoid'))
 
         self.assertEqual([('HD', 256)], formats)
+
+@utils.override_s3_settings
+class SubtitlesTest(TestCase):
+
+    @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')
+    @patch('contrib.plugins.aws.backend.Backend.s3_client')
+    def test_upload_subtitles_compatibility(self, mock_s3_client):
+        pipeline.tasks.upload_subtitles('videoid', 'subid', 'fr', None)
+        mock_s3_client.put_object.assert_called_once()
+
+    @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')
+    def test_subtitles_url_compatibility(self):
+        video = pipeline.models.Video.objects.create(public_id='videoid')
+        subtitles = video.subtitles.create(language='fr')
+        subtitles.save()
+        self.assertIsNotNone(subtitles.download_url)
+
+    def test_get_subtitles_download_url(self):
+        backend = aws_backend.Backend()
+        url = backend.get_subtitles_download_url('videoid', 'subsid', 'uk')
+        self.assertIsNotNone(url)
+        self.assertIn('videoid', url)
+        self.assertIn('subsid', url)
+        self.assertIn('uk', url)

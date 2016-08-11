@@ -11,7 +11,6 @@ from rest_framework.decorators import detail_route
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from pipeline import backend
 from pipeline import models
 from pipeline import tasks
 from . import serializers
@@ -89,9 +88,8 @@ class VideoViewSet(mixins.RetrieveModelMixin,
         # case of upload failure
         with transaction.atomic():
             subtitles = serializer.save(video_id=video.id)
-            # TODO shouldn't we convert the subtitles to vtt, first?
             # TODO shouldn't we limit the size of the subtitles?
-            backend.get().upload_subtitles(video.public_id, subtitles.public_id, subtitles.language, attachment)
+            tasks.upload_subtitles(video.public_id, subtitles.public_id, subtitles.language, attachment)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

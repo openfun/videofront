@@ -169,7 +169,7 @@ class VideosTests(BaseAuthenticatedTests):
         mock_delete_resources.assert_called_once_with('videoid')
 
     @override_plugin_backend(
-        get_subtitles_download_url=lambda vid, sid: "http://example.com/{}.vtt".format(sid)
+        get_subtitles_download_url=lambda vid, sid, lang: "http://example.com/{}.vtt".format(sid)
     )
     def test_get_video_with_subtitles(self):
         video = models.Video.objects.create(public_id="videoid")
@@ -224,9 +224,7 @@ class VideoSubtitlesTests(BaseAuthenticatedTests):
         upload_subtitles=lambda *args: None,
         get_subtitles_download_url=lambda *args: "http://example.com/subs.vtt"
     )
-    @patch('pipeline.utils.generate_random_id')
-    def test_upload_subtitles(self, mock_generate_random_id):
-        mock_generate_random_id.return_value = "pouac"
+    def test_upload_subtitles(self):
         video = models.Video.objects.create(public_id="videoid")
         url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
         subfile = StringIO("some srt content in here")
@@ -280,3 +278,24 @@ class VideoSubtitlesTests(BaseAuthenticatedTests):
             )
 
         self.assertEqual(0, models.VideoSubtitles.objects.count())
+
+    def test_cannot_modify_subtitles(self):
+        video = models.Video.objects.create(public_id="videoid")
+        video.subtitles.create(public_id="subsid", language="fr")
+        url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
+        subfile = StringIO("some srt content in here")
+
+        with override_plugin_backend(
+                upload_subtitles=lambda *args: None,
+                get_subtitles_download_url=lambda *args: None
+        ):
+            response = self.client.post(url, data={
+                'id': 'subsid',
+                'language': 'en',
+                'name': 'subs.srt', 'attachment': subfile
+            })
+
+        # Subtitles were in fact created, not modified
+        self.assertEqual(201, response.status_code)
+        self.assertEqual('fr', video.subtitles.get(public_id='subsid').language)
+        self.assertEqual('en', video.subtitles.exclude(public_id='subsid').get().language)
