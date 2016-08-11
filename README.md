@@ -78,7 +78,7 @@ AWS-specific commands:
 
 Depending on your infrastructure, you will need to use different settings in production. In videofront, the same task can be performed in different ways. You will have to choose the right implementation for each task. For instance, if you wish to store files on Amazon S3, then upload urls will have to be generated for S3. In practice, you will have to create a plugin backend that inherits from `pipeline.backend.BaseBackend` and modify accordingly the `PLUGIN_BACKEND` setting:
 
-    # videofron/settings_prod_sample.py
+    # videofront/settings_prod_sample_aws.py
     PLUGIN_BACKEND "contrib.plugins.aws.backend.Backend"
 
 Note that if you need to access AWS services, you will have to define various AWS-specific setting variables described in the documentation of `contrib.plugins.aws.backend.Backend`.
