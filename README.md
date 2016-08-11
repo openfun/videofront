@@ -49,7 +49,7 @@ Run unit tests:
 
 Check test coverage:
 
-    coverage run ./manage.py tet
+    coverage run ./manage.py test
     coverage report
 
 Run a development server on port 9000:
@@ -85,7 +85,7 @@ Note that if you need to access AWS services, you will have to define various AW
 
 Test production settings locally:
 
-    export DJANGO_SETTINGS_MODULE=videofront.settings_prod 
+    export DJANGO_SETTINGS_MODULE=videofront.settings_prod
     ./manage.py runserver
 
 Run celery workers:
