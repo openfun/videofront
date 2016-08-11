@@ -1,5 +1,6 @@
 from time import sleep
 
+from django.conf import settings
 from django.db import transaction
 from django.http import Http404
 from rest_framework import exceptions
@@ -83,12 +84,20 @@ class VideoViewSet(mixins.RetrieveModelMixin,
 
         if not attachment:
             return Response({'attachment': "Missing attachment"}, status=status.HTTP_400_BAD_REQUEST)
+        if attachment.size > settings.SUBTITLES_MAX_BYTES:
+            return Response(
+                {
+                    'attachment': "Attachment too large. Maximum allowed size: {} bytes".format(
+                        settings.SUBTITLES_MAX_BYTES
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         # We do this in an atomic transaction to avoid creating db object in
         # case of upload failure
         with transaction.atomic():
             subtitles = serializer.save(video_id=video.id)
-            # TODO shouldn't we limit the size of the subtitles?
             tasks.upload_subtitles(video.public_id, subtitles.public_id, subtitles.language, attachment)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)

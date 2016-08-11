@@ -160,5 +160,12 @@ CELERYBEAT_SCHEDULE = {
     },
 }
 
+##############################
+# Videofront-specific settings
+##############################
+
+# Maximum size of subtitle files
+SUBTITLES_MAX_BYTES = 1024*1024*5 # 5 Mb
+
 # Override this setting to provide your own custom implementation of pipeline tasks.
 PLUGIN_BACKEND = 'pipeline.backend.BaseBackend'

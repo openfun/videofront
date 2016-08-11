@@ -5,6 +5,7 @@ from time import time
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
+from django.test.utils import override_settings
 from mock import Mock, patch
 
 from pipeline import models
@@ -299,3 +300,23 @@ class VideoSubtitlesTests(BaseAuthenticatedTests):
         self.assertEqual(201, response.status_code)
         self.assertEqual('fr', video.subtitles.get(public_id='subsid').language)
         self.assertEqual('en', video.subtitles.exclude(public_id='subsid').get().language)
+
+    @override_settings(SUBTITLES_MAX_BYTES=139)
+    def test_upload_subtitles_too_large(self):
+        models.Video.objects.create(public_id="videoid")
+        content = (
+            "Some vtt content here. This should as long as a tweet, at"
+            " 140 characters exactly. Yes, I counted, multiple times and came up with"
+            " 140 chars."
+        )
+        subfile = StringIO(content)
+        self.assertEqual(140, len(content))
+        url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
+
+        response = self.client.post(url, data={
+            'language': 'en',
+            'name': 'subs.srt', 'attachment': subfile
+        })
+        self.assertEqual(400, response.status_code)
+        self.assertIn('attachment', response.json())
+        self.assertIn('139', response.json()['attachment'])
