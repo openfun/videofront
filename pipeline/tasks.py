@@ -115,6 +115,8 @@ def monitor_uploads(public_video_ids=None):
         )
         video.title = upload_url.filename
         video.save()
+        if upload_url.playlist:
+            video.playlists.add(upload_url.playlist)
 
         # Start transcoding
         if video_created:

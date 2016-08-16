@@ -57,7 +57,7 @@ class VideoFilter(filters.FilterSet):
     """
     Filter videos by playlist public id.
     """
-    playlist_id = django_filters.CharFilter(name="playlist", lookup_expr="public_id")
+    playlist_id = django_filters.CharFilter(name="playlists", lookup_expr="public_id")
 
     class Meta:
         model = models.Video

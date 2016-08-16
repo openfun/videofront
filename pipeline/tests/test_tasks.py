@@ -43,6 +43,7 @@ class LockTests(TransactionTestCase):
         self.assertRaises(IntegrityError, failing_task)
         self.assertTrue(tasks.acquire_lock("dummylock"))
 
+
 class TasksTests(TestCase):
 
     def test_monitor_uploads(self):
@@ -138,6 +139,26 @@ class TasksTests(TestCase):
             tasks.monitor_uploads()
 
         self.assertEqual(last_checked, models.VideoUploadUrl.objects.get().last_checked)
+
+    def test_monitor_upload_of_url_with_playlist(self):
+        playlist = factories.PlaylistFactory()
+        factories.VideoUploadUrlFactory(
+            public_video_id='videoid',
+            expires_at=time() + 3600,
+            was_used=False,
+            playlist=playlist
+        )
+
+        mock_backend = Mock(return_value=Mock(
+            create_transcoding_jobs=Mock(return_value=[]),
+            iter_available_formats=Mock(return_value=[]),
+        ))
+        with override_settings(PLUGIN_BACKEND=mock_backend):
+            tasks.monitor_uploads()
+
+        video = models.Video.objects.get()
+        self.assertEqual(1, video.playlists.count())
+        self.assertEqual(playlist.id, video.playlists.get().id)
 
     def test_transcode_video_success(self):
         factories.VideoFactory(public_id='videoid')

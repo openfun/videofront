@@ -33,7 +33,7 @@ class Video(models.Model):
 
 class Playlist(models.Model):
     name = models.CharField(max_length=128, db_index=True)
-    videos = models.ManyToManyField(Video)
+    videos = models.ManyToManyField(Video, related_name='playlists')
     owner = models.ForeignKey(User)
     public_id = models.CharField(
         max_length=20, unique=True,
