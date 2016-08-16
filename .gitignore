@@ -3,6 +3,7 @@
 .coverage
 venv/
 env/
+env3/
 db.sqlite3
 videofront/settings_prod.py
 celerybeat-schedule

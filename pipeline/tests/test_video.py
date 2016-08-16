@@ -4,6 +4,7 @@ from django.test import TestCase
 
 from pipeline import models
 from pipeline.tasks import create_upload_url
+from pipeline.tests.factories import UserFactory
 
 from .utils import override_plugin_backend
 
@@ -17,7 +18,8 @@ class VideoUploadTests(TestCase):
         'id': 'videoid'
     })
     def test_create_upload_url(self):
-        _upload_url = create_upload_url('video.mp4')
+        user = UserFactory()
+        _upload_url = create_upload_url(user.id, 'video.mp4')
         should_check_urls = models.VideoUploadUrl.objects.should_check()
 
         self.assertEqual(1, should_check_urls.count())

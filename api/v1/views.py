@@ -116,5 +116,5 @@ class VideoUploadViewSet(viewsets.ViewSet):
             raise exceptions.ValidationError("Missing filename parameter")
         if len(filename) > 128:
             raise exceptions.ValidationError("Invalid filename parameter (> 128 characters)")
-        url_info = tasks.create_upload_url(filename)
+        url_info = tasks.create_upload_url(request.user.id, filename)
         return Response(url_info)

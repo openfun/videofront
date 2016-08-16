@@ -2,7 +2,6 @@ from datetime import timedelta
 from time import time
 from mock import Mock
 
-from django.db import transaction
 from django.db.utils import IntegrityError
 from django.test import TestCase, TransactionTestCase
 from django.test.utils import override_settings
@@ -11,6 +10,7 @@ from django.utils.timezone import now
 from pipeline import exceptions
 from pipeline import models
 from pipeline import tasks
+from pipeline.tests import factories
 
 
 class LockTests(TransactionTestCase):
@@ -55,12 +55,12 @@ class TasksTests(TestCase):
             iter_available_formats=Mock(return_value=[]),
         ))
 
-        models.VideoUploadUrl.objects.create(
+        factories.VideoUploadUrlFactory(
             public_video_id='videoid1',
             filename="video1.mp4",
             expires_at=time() + 3600
         )
-        models.VideoUploadUrl.objects.create(
+        factories.VideoUploadUrlFactory(
             public_video_id='videoid2',
             filename="video2.mp4",
             expires_at=time() + 3600
@@ -78,6 +78,7 @@ class TasksTests(TestCase):
         self.assertIsNotNone(url2.last_checked)
         self.assertEqual(1, models.Video.objects.count())
         self.assertEqual('video2.mp4', models.Video.objects.get().title)
+        self.assertEqual(url2.owner, models.Video.objects.get().owner)
         mock_backend.return_value.create_transcoding_jobs.assert_called_once_with('videoid2')
 
     def test_monitor_uploads_task(self):
@@ -88,8 +89,10 @@ class TasksTests(TestCase):
 
 
     def test_monitor_uploads_with_one_expired_url(self):
-        models.VideoUploadUrl.objects.create(public_video_id='videoid', expires_at=time() - 7200,
-                                             was_used=False, last_checked=None)
+        factories.VideoUploadUrlFactory(
+            public_video_id='videoid', expires_at=time() - 7200,
+            was_used=False, last_checked=None
+        )
         mock_backend = Mock(return_value=Mock(
             create_transcoding_jobs=Mock(return_value=[]),
             iter_available_formats=Mock(return_value=[]),
@@ -102,11 +105,13 @@ class TasksTests(TestCase):
         mock_backend.return_value.create_transcoding_jobs.assert_called_once_with('videoid')
 
     def test_monitor_uploads_for_already_created_video(self):
-        models.VideoUploadUrl.objects.create(public_video_id='videoid',
-                                             expires_at=time() + 3600,
-                                             was_used=False,
-                                             last_checked=None)
-        models.Video.objects.create(public_id='videoid')
+        upload_url = factories.VideoUploadUrlFactory(
+            public_video_id='videoid',
+            expires_at=time() + 3600,
+            was_used=False,
+            last_checked=None
+        )
+        factories.VideoFactory(public_id='videoid', owner=upload_url.owner)
 
         # Simulate a monitoring task that runs while the video has alreay been created
         mock_backend = Mock(return_value=Mock(
@@ -119,10 +124,12 @@ class TasksTests(TestCase):
 
     def test_monitor_upload_of_url_with_last_checked_in_future(self):
         last_checked = now() + timedelta(seconds=100)
-        models.VideoUploadUrl.objects.create(public_video_id='videoid',
-                                             expires_at=time() + 3600,
-                                             was_used=False,
-                                             last_checked=last_checked)
+        factories.VideoUploadUrlFactory(
+            public_video_id='videoid',
+            expires_at=time() + 3600,
+            was_used=False,
+            last_checked=last_checked,
+        )
 
         mock_backend = Mock(return_value=Mock(
             get_uploaded_video=Mock(side_effect=exceptions.VideoNotUploaded)
@@ -133,7 +140,7 @@ class TasksTests(TestCase):
         self.assertEqual(last_checked, models.VideoUploadUrl.objects.get().last_checked)
 
     def test_transcode_video_success(self):
-        models.Video.objects.create(public_id='videoid')
+        factories.VideoFactory(public_id='videoid')
         mock_backend = Mock(return_value=Mock(
             create_transcoding_jobs=Mock(return_value=['job1']),
             get_transcoding_job_progress=Mock(return_value=(42, True)),
@@ -156,7 +163,7 @@ class TasksTests(TestCase):
         self.assertEqual(128, video_format.bitrate)
 
     def test_transcode_video_failure(self):
-        models.Video.objects.create(public_id='videoid')
+        factories.VideoFactory(public_id='videoid')
 
         def get_transcoding_job_progress(job):
             if job == 'job1':
@@ -182,7 +189,7 @@ class TasksTests(TestCase):
         self.assertEqual(50, video_transcoding.progress)
 
     def test_transcode_video_twice(self):
-        models.Video.objects.create(public_id='videoid')
+        factories.VideoFactory(public_id='videoid')
         mock_backend = Mock(return_value=Mock(
             create_transcoding_jobs=Mock(return_value=['job1']),
             iter_available_formats=Mock(return_value=[]),

@@ -1,6 +1,7 @@
 import logging
 
 from django.db.transaction import TransactionManagementError
+from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.utils.timezone import now
 from celery import shared_task
@@ -33,7 +34,7 @@ def release_lock(name):
     except TransactionManagementError:
         logger.error("Could not release lock %s", name)
 
-def create_upload_url(filename):
+def create_upload_url(user_id, filename):
     """
     Create an unused video upload url.
 
@@ -44,6 +45,7 @@ def create_upload_url(filename):
         'id': public video id
     }
     """
+    user = User.objects.get(id=user_id)
     upload_url = backend.get().create_upload_url(filename)
 
     public_video_id = upload_url["id"]
@@ -52,7 +54,8 @@ def create_upload_url(filename):
     models.VideoUploadUrl.objects.create(
         public_video_id=public_video_id,
         expires_at=expires_at,
-        filename=filename
+        filename=filename,
+        owner=user,
     )
 
     return upload_url
@@ -103,6 +106,7 @@ def monitor_uploads(public_video_ids=None):
         # function can run concurrently.
         video, video_created = models.Video.objects.get_or_create(
             public_id=upload_url.public_video_id,
+            owner=upload_url.owner
         )
         video.title = upload_url.filename
         video.save()

@@ -8,6 +8,7 @@ from contrib.plugins.aws import backend as aws_backend
 import pipeline.backend
 import pipeline.exceptions
 import pipeline.tasks
+from pipeline.tests.factories import UserFactory, VideoFactory
 from . import utils
 
 
@@ -38,7 +39,8 @@ class VideoUploadUrlTests(TestCase):
         generate_presigned_url=Mock(return_value="http://someurl")
     ))
     def test_create_upload_url_compatibility(self):
-        upload_url = pipeline.tasks.create_upload_url('filename')
+        user = UserFactory()
+        upload_url = pipeline.tasks.create_upload_url(user.id, 'filename')
         self.assertEqual('http://someurl', upload_url['url'])
 
     def test_get_successfuly_uploaded_video(self):
@@ -155,9 +157,8 @@ class SubtitlesTest(TestCase):
 
     @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')
     def test_subtitles_url_compatibility(self):
-        video = pipeline.models.Video.objects.create(public_id='videoid')
+        video = VideoFactory(public_id='videoid')
         subtitles = video.subtitles.create(language='fr')
-        subtitles.save()
         self.assertIsNotNone(subtitles.download_url)
 
     def test_get_subtitles_download_url(self):

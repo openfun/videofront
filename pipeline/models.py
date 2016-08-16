@@ -1,4 +1,5 @@
 from django.conf.global_settings import LANGUAGES
+from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator, MinValueValidator, MaxValueValidator
 from django.db import models
 
@@ -17,6 +18,7 @@ class Video(models.Model):
         blank=False,
         null=True,
     )
+    owner = models.ForeignKey(User)
 
     @property
     def transcoding_status(self):
@@ -64,6 +66,7 @@ class VideoUploadUrl(models.Model):
         blank=True, null=True,
         db_index=True,
     )
+    owner = models.ForeignKey(User, related_name='video_upload_urls')
 
     objects = managers.VideoUploadUrlManager()
 
