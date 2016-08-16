@@ -36,17 +36,21 @@ class VideoViewSet(mixins.RetrieveModelMixin,
     authentication_classes = AUTHENTICATION_CLASSES
     permission_classes = PERMISSION_CLASSES
 
-    queryset = models.Video.objects.select_related(
-        'transcoding'
-    ).prefetch_related(
-        'subtitles', 'formats'
-    ).exclude(
-        transcoding__status=models.VideoTranscoding.STATUS_FAILED
-    )
     serializer_class = serializers.VideoSerializer
 
     lookup_field = 'public_id'
     lookup_url_kwarg = 'id'
+
+    def get_queryset(self):
+        return models.Video.objects.select_related(
+            'transcoding'
+        ).prefetch_related(
+            'subtitles', 'formats'
+        ).exclude(
+            transcoding__status=models.VideoTranscoding.STATUS_FAILED
+        ).filter(
+            owner=self.request.user
+        )
 
     def get_object(self):
         try:

@@ -85,8 +85,16 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual(200, response.status_code)
         self.assertEqual([], videos)
 
+    def test_list_videos_with_different_owners(self):
+        video1 = factories.VideoFactory(owner=self.user)
+        _video2 = factories.VideoFactory(owner=factories.UserFactory())
+        videos = self.client.get(reverse("api:v1:video-list")).json()
+
+        self.assertEqual(1, len(videos))
+        self.assertEqual(video1.public_id, videos[0]["id"])
+
     def test_get_video(self):
-        video = self.create_video(public_id="videoid", title="Some title")
+        video = self.create_video(public_id="videoid", title="Some title", owner=self.user)
         models.VideoTranscoding(video=video, status=models.VideoTranscoding.STATUS_SUCCESS)
         response = self.client.get(reverse('api:v1:video-detail', kwargs={'id': 'videoid'}))
         self.assertEqual(200, response.status_code)
@@ -98,7 +106,7 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual([], video['formats'])
 
     def test_get_not_processing_video(self):
-        self.create_video(public_id="videoid", title='videotitle')
+        self.create_video(public_id="videoid", title='videotitle', owner=self.user)
         url = reverse("api:v1:video-list")
         videos = self.client.get(url).json()
 
@@ -109,7 +117,7 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual(None, videos[0]['status_details'])
 
     def test_get_processing_video(self):
-        video = self.create_video(public_id="videoid", title='videotitle')
+        video = self.create_video(public_id="videoid", title='videotitle', owner=self.user)
         _transcoding = models.VideoTranscoding.objects.create(
             video=video,
             progress=42,
@@ -121,7 +129,7 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual(42, videos[0]['status_details']['progress'])
 
     def test_list_failed_videos(self):
-        video = self.create_video(public_id="videoid", title='videotitle')
+        video = self.create_video(public_id="videoid", title='videotitle', owner=self.user)
         _transcoding = models.VideoTranscoding.objects.create(
             video=video,
             status=models.VideoTranscoding.STATUS_FAILED
@@ -149,14 +157,15 @@ class VideosTests(BaseAuthenticatedTests):
     def test_get_video_that_was_just_uploaded(self):
         factories.VideoUploadUrlFactory(
             public_video_id="videoid",
-            expires_at=time() + 3600
+            expires_at=time() + 3600,
+            owner=self.user
         )
         response = self.client.get(reverse("api:v1:video-detail", kwargs={'id': 'videoid'}))
 
         self.assertEqual(200, response.status_code)
 
     def test_update_video_title(self):
-        self.create_video(public_id="videoid", title='videotitle')
+        self.create_video(public_id="videoid", title='videotitle', owner=self.user)
         response = self.client.put(
             reverse('api:v1:video-detail', kwargs={'id': 'videoid'}),
             data=json.dumps({'title': 'title2'}),
@@ -167,7 +176,7 @@ class VideosTests(BaseAuthenticatedTests):
 
     def test_delete_video(self):
         mock_delete_resources = Mock()
-        self.create_video(public_id="videoid")
+        self.create_video(public_id="videoid", owner=self.user)
         with override_plugin_backend(delete_resources=mock_delete_resources):
             response = self.client.delete(reverse('api:v1:video-detail', kwargs={'id': 'videoid'}))
 
@@ -179,7 +188,7 @@ class VideosTests(BaseAuthenticatedTests):
         get_subtitles_download_url=lambda vid, sid, lang: "http://example.com/{}.vtt".format(sid)
     )
     def test_get_video_with_subtitles(self):
-        video = self.create_video(public_id="videoid")
+        video = self.create_video(public_id="videoid", owner=self.user)
         video.subtitles.create(language="fr", public_id="subid1")
         video.subtitles.create(language="en", public_id="subid2")
 
@@ -206,7 +215,7 @@ class VideosTests(BaseAuthenticatedTests):
         iter_available_formats=lambda video_id: [],
     )
     def test_get_video_with_formats(self):
-        video = self.create_video(public_id="videoid")
+        video = self.create_video(public_id="videoid", owner=self.user)
         video.formats.create(name="SD", bitrate=128)
         video.formats.create(name="HD", bitrate=256)
 
@@ -232,7 +241,7 @@ class VideoSubtitlesTests(BaseAuthenticatedTests):
         get_subtitles_download_url=lambda *args: "http://example.com/subs.vtt"
     )
     def test_upload_subtitles(self):
-        video = self.create_video(public_id="videoid")
+        video = self.create_video(public_id="videoid", owner=self.user)
         url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
         subfile = StringIO("some srt content in here")
         response = self.client.post(
@@ -251,7 +260,7 @@ class VideoSubtitlesTests(BaseAuthenticatedTests):
         self.assertEqual(1, video.subtitles.count())
 
     def test_upload_subtitles_invalid_language(self):
-        self.create_video(public_id="videoid")
+        self.create_video(public_id="videoid", owner=self.user)
         url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
         # only country codes are accepted
         response = self.client.post(url, data={'language': 'french'})
@@ -261,7 +270,7 @@ class VideoSubtitlesTests(BaseAuthenticatedTests):
         self.assertEqual(0, models.VideoSubtitles.objects.count())
 
     def test_upload_subtitles_missing_attachment(self):
-        self.create_video(public_id="videoid")
+        self.create_video(public_id="videoid", owner=self.user)
         url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
         response = self.client.post(url, data={'language': 'fr'})
 
@@ -271,7 +280,7 @@ class VideoSubtitlesTests(BaseAuthenticatedTests):
 
     @patch('django.core.handlers.base.logger')# mute request logger
     def test_upload_subtitles_failed_upload(self, mock_logger):
-        self.create_video(public_id="videoid")
+        self.create_video(public_id="videoid", owner=self.user)
         url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
         subfile = StringIO("some srt content in here")
 
@@ -287,7 +296,7 @@ class VideoSubtitlesTests(BaseAuthenticatedTests):
         self.assertEqual(0, models.VideoSubtitles.objects.count())
 
     def test_cannot_modify_subtitles(self):
-        video = self.create_video(public_id="videoid")
+        video = self.create_video(public_id="videoid", owner=self.user)
         video.subtitles.create(public_id="subsid", language="fr")
         url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
         subfile = StringIO("some srt content in here")
@@ -309,7 +318,7 @@ class VideoSubtitlesTests(BaseAuthenticatedTests):
 
     @override_settings(SUBTITLES_MAX_BYTES=139)
     def test_upload_subtitles_too_large(self):
-        self.create_video(public_id="videoid")
+        self.create_video(public_id="videoid", owner=self.user)
         content = (
             "Some vtt content here. This should as long as a tweet, at"
             " 140 characters exactly. Yes, I counted, multiple times and came up with"

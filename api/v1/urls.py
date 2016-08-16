@@ -7,7 +7,7 @@ from . import views
 
 
 router = routers.DefaultRouter()
-router.register(r'videos', views.VideoViewSet)
+router.register(r'videos', views.VideoViewSet, base_name='video')
 router.register(r'videouploads', views.VideoUploadViewSet, base_name='videoupload')
 
 urlpatterns = [
