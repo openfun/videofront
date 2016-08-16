@@ -3,7 +3,9 @@ from time import sleep
 from django.conf import settings
 from django.db import transaction
 from django.http import Http404
+import django_filters
 from rest_framework import exceptions
+from rest_framework import filters
 from rest_framework import mixins
 from rest_framework import status
 from rest_framework import viewsets
@@ -21,6 +23,46 @@ AUTHENTICATION_CLASSES = (BasicAuthentication, SessionAuthentication, TokenAuthe
 PERMISSION_CLASSES = (IsAuthenticated,)
 
 
+class PlaylistFilter(filters.FilterSet):
+    """
+    Filter playlists by name.
+    """
+    name = django_filters.CharFilter(lookup_expr="icontains")
+
+    class Meta:
+        model = models.Playlist
+        fields = ['name']
+
+
+class PlaylistViewSet(viewsets.ModelViewSet):
+    """
+    List, update and create video playlists.
+    """
+    authentication_classes = AUTHENTICATION_CLASSES
+    permission_classes = PERMISSION_CLASSES
+
+    serializer_class = serializers.PlaylistSerializer
+
+    lookup_field = 'public_id'
+    lookup_url_kwarg = 'id'
+
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_class = PlaylistFilter
+
+    def get_queryset(self):
+        return models.Playlist.objects.filter(owner=self.request.user)
+
+
+class VideoFilter(filters.FilterSet):
+    """
+    Filter videos by playlist public id.
+    """
+    playlist_id = django_filters.CharFilter(name="playlist", lookup_expr="public_id")
+
+    class Meta:
+        model = models.Video
+        fields = ['playlist_id']
+
 
 class VideoViewSet(mixins.RetrieveModelMixin,
                    mixins.UpdateModelMixin,
@@ -28,7 +70,8 @@ class VideoViewSet(mixins.RetrieveModelMixin,
                    mixins.ListModelMixin,
                    viewsets.GenericViewSet):
     """
-    List available videos.
+    List available videos. Note that you may obtain only the videos that belong
+    to a certain playlist by passing the argument `?playlist_id=xxxx`.
     """
     # Similar to a generic model viewset, but without creation features. Video
     # creation is only available through upload.
@@ -41,16 +84,22 @@ class VideoViewSet(mixins.RetrieveModelMixin,
     lookup_field = 'public_id'
     lookup_url_kwarg = 'id'
 
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_class = VideoFilter
+
+
     def get_queryset(self):
-        return models.Video.objects.select_related(
+        queryset = models.Video.objects.select_related(
             'transcoding'
         ).prefetch_related(
             'subtitles', 'formats'
         ).exclude(
             transcoding__status=models.VideoTranscoding.STATUS_FAILED
         ).filter(
-            owner=self.request.user
+           owner=self.request.user
         )
+
+        return queryset
 
     def get_object(self):
         try:
@@ -120,5 +169,15 @@ class VideoUploadViewSet(viewsets.ViewSet):
             raise exceptions.ValidationError("Missing filename parameter")
         if len(filename) > 128:
             raise exceptions.ValidationError("Invalid filename parameter (> 128 characters)")
-        url_info = tasks.create_upload_url(request.user.id, filename)
+
+        # Validate playlist id. Note that this could be in a serializer, but I
+        # have not found a proper way to do it.
+        playlist_public_id = request.data.get('playlist_id')
+        if playlist_public_id is not None:
+            try:
+                models.Playlist.objects.get(owner=request.user, public_id=playlist_public_id)
+            except models.Playlist.DoesNotExist:
+                return Response({'playlist_id': "Does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+        url_info = tasks.create_upload_url(request.user.id, filename, playlist_public_id=playlist_public_id)
         return Response(url_info)

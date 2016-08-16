@@ -11,12 +11,10 @@ from . import utils
 class Video(models.Model):
     title = models.CharField(max_length=100)
     public_id = models.CharField(
-        default=utils.generate_random_id,
-        unique=True,
-        max_length=20,
+        max_length=20, unique=True,
         validators=[MinLengthValidator(1)],
-        blank=False,
-        null=True,
+        blank=False, null=True,
+        default=utils.generate_random_id,
     )
     owner = models.ForeignKey(User)
 
@@ -33,6 +31,18 @@ class Video(models.Model):
         return self.transcoding.started_at if self.transcoding else None
 
 
+class Playlist(models.Model):
+    name = models.CharField(max_length=128, db_index=True)
+    videos = models.ManyToManyField(Video)
+    owner = models.ForeignKey(User)
+    public_id = models.CharField(
+        max_length=20, unique=True,
+        validators=[MinLengthValidator(1)],
+        blank=False, null=True,
+        default=utils.generate_random_id,
+    )
+
+
 class VideoUploadUrl(models.Model):
     """
     Video upload urls are generated in order to upload new videos. To each url is
@@ -41,12 +51,10 @@ class VideoUploadUrl(models.Model):
     normally.
     """
     public_video_id = models.CharField(
-        default=utils.generate_random_id,
-        max_length=20,
-        unique=True,
+        max_length=20, unique=True,
         validators=[MinLengthValidator(1)],
-        blank=False,
-        null=True,
+        blank=False, null=True,
+        default=utils.generate_random_id,
     )
     filename = models.CharField(
         verbose_name="Uploaded file name",
@@ -67,6 +75,11 @@ class VideoUploadUrl(models.Model):
         db_index=True,
     )
     owner = models.ForeignKey(User, related_name='video_upload_urls')
+    playlist = models.ForeignKey(
+        Playlist,
+        verbose_name="Playlist to which the video will be added after upload",
+        blank=True, null=True
+    )
 
     objects = managers.VideoUploadUrlManager()
 
@@ -110,7 +123,8 @@ class VideoSubtitles(models.Model):
     public_id = models.CharField(
         max_length=20, unique=True,
         validators=[MinLengthValidator(1)],
-        default=utils.generate_random_id
+        blank=False, null=True,
+        default=utils.generate_random_id,
     )
     language = models.CharField(
         max_length=2,

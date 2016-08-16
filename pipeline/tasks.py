@@ -34,7 +34,7 @@ def release_lock(name):
     except TransactionManagementError:
         logger.error("Could not release lock %s", name)
 
-def create_upload_url(user_id, filename):
+def create_upload_url(user_id, filename, playlist_public_id=None):
     """
     Create an unused video upload url.
 
@@ -51,11 +51,16 @@ def create_upload_url(user_id, filename):
     public_video_id = upload_url["id"]
     expires_at = upload_url['expires_at']
 
+    playlist = None
+    if playlist_public_id is not None:
+        playlist = models.Playlist.objects.get(public_id=playlist_public_id)
+
     models.VideoUploadUrl.objects.create(
         public_video_id=public_video_id,
         expires_at=expires_at,
         filename=filename,
         owner=user,
+        playlist=playlist,
     )
 
     return upload_url

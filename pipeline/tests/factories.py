@@ -21,3 +21,9 @@ class VideoFactory(factory.DjangoModelFactory):
         model = models.Video
 
     owner = factory.SubFactory(UserFactory)
+
+class PlaylistFactory(factory.DjangoModelFactory):
+    class Meta:
+        model = models.Playlist
+
+    owner = factory.SubFactory(UserFactory)

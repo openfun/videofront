@@ -3,6 +3,15 @@ from rest_framework import serializers
 from pipeline import models
 
 
+class PlaylistSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(source='public_id', read_only=True)
+    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        fields = ('id', 'name', 'owner')
+        model = models.Playlist
+
+
 class VideoTranscodingSerializer(serializers.ModelSerializer):
 
     class Meta:
