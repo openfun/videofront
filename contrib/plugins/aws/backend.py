@@ -146,8 +146,11 @@ class Backend(pipeline.backend.BaseBackend):
             raise TranscodingFailed('Unknown transcoding status: {}'.format(job_status))
 
     def delete_resources(self, public_video_id):
-        bucket = settings.S3_BUCKET
         folder = self.get_video_folder_key(public_video_id)
+        self.delete_folder(folder)
+
+    def delete_folder(self, folder):
+        bucket = settings.S3_BUCKET
         list_objects = self.s3_client.list_objects(Bucket=bucket, Prefix=folder)
         for obj in list_objects.get('Contents', []):
             self.s3_client.delete_object(
