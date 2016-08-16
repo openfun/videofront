@@ -1,7 +1,7 @@
 import sys
 from .settings import * # pylint: disable=unused-wildcard-import
 
-if len(sys.argv) > 0 and sys.argv[1] == 'test':
+if len(sys.argv) > 1 and sys.argv[1] == 'test':
     sys.stderr.write("You are running tests with production settings. I'm pretty sure you don't want to do that.\n")
     sys.exit(1)
 
