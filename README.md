@@ -11,7 +11,7 @@ Clone the repository:
 
 Install non-python requirements:
 
-    sudo apt-get install rabbitmq-server
+    sudo apt-get install rabbitmq-server libxml2-dev libxslt1-dev
 
 Install python requirements in a virtual environment:
 
