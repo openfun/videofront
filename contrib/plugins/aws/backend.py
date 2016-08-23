@@ -122,7 +122,8 @@ class Backend(pipeline.backend.BaseBackend):
                 PipelineId=pipeline_id,
                 Input={'Key': src_file_key},
                 Output={
-                    # Note that the transcoded video should have public-read permissions
+                    # Note that the transcoded video should have public-read
+                    # permissions or be accessible by cloudfront
                     'Key': self.get_video_key(public_video_id, resolution),
                     'PresetId': preset_id
                 }
