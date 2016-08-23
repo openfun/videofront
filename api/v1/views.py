@@ -4,7 +4,7 @@ from django.conf import settings
 from django.db import transaction
 from django.http import Http404
 import django_filters
-from rest_framework import exceptions
+from rest_framework.exceptions import ValidationError
 from rest_framework import filters
 from rest_framework import mixins
 from rest_framework import status
@@ -14,6 +14,7 @@ from rest_framework.decorators import detail_route
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from pipeline import exceptions
 from pipeline import models
 from pipeline import tasks
 from . import serializers
@@ -147,11 +148,14 @@ class VideoViewSet(mixins.RetrieveModelMixin,
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # We do this in an atomic transaction to avoid creating db object in
-        # case of upload failure
-        with transaction.atomic():
-            subtitles = serializer.save(video_id=video.id)
-            tasks.upload_subtitles(video.public_id, subtitles.public_id, subtitles.language, attachment)
+        try:
+            # We do this in an atomic transaction to avoid creating db object in
+            # case of upload failure
+            with transaction.atomic():
+                subtitles = serializer.save(video_id=video.id)
+                tasks.upload_subtitles(video.public_id, subtitles.public_id, subtitles.language, attachment.read())
+        except exceptions.SubtitlesInvalid as e:
+            return Response({'attachment': e.args[0]}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -166,9 +170,9 @@ class VideoUploadViewSet(viewsets.ViewSet):
     def create(self, request):
         filename = request.data.get('filename')
         if not filename:
-            raise exceptions.ValidationError("Missing filename parameter")
+            raise ValidationError("Missing filename parameter")
         if len(filename) > 128:
-            raise exceptions.ValidationError("Invalid filename parameter (> 128 characters)")
+            raise ValidationError("Invalid filename parameter (> 128 characters)")
 
         # Validate playlist id. Note that this could be in a serializer, but I
         # have not found a proper way to do it.

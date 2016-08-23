@@ -171,10 +171,10 @@ class Backend(pipeline.backend.BaseBackend):
                 continue
             yield resolution, bitrate
 
-    def upload_subtitles(self, video_id, subtitles_id, language_code, attachment):
+    def upload_subtitles(self, video_id, subtitles_id, language_code, content):
         self.s3_client.put_object(
             ACL='public-read',
-            Body=attachment,
+            Body=content,
             Bucket=settings.S3_BUCKET,
             Key=self.get_subtitles_key(video_id, subtitles_id, language_code),
         )

@@ -18,3 +18,9 @@ class TranscodingFailed(Exception):
     Raised whenever a transcoding task failed.
     """
     pass
+
+class SubtitlesInvalid(Exception):
+    """
+    Raised whenever subtitles cannot be converted to utf8 or to VTT format.
+    """
+    pass

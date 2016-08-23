@@ -89,6 +89,7 @@ class VideoUploadUrlTests(TestCase):
         url = backend.get_video_streaming_url('videoid', 'SD')
         self.assertEqual("https://cloudfrontid.cloudfront.net/videos/videoid/SD.mp4", url)
 
+
 @utils.override_s3_settings
 class TranscodeTests(TestCase):
 
@@ -162,7 +163,7 @@ class SubtitlesTest(TestCase):
     @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')
     @patch('contrib.plugins.aws.backend.Backend.s3_client')
     def test_upload_subtitles_compatibility(self, mock_s3_client):
-        pipeline.tasks.upload_subtitles('videoid', 'subid', 'fr', None)
+        pipeline.tasks.upload_subtitles('videoid', 'subid', 'fr', b"WEBVTT")
         mock_s3_client.put_object.assert_called_once()
 
     @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')

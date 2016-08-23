@@ -91,16 +91,16 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
-    def upload_subtitles(self, video_id, subtitles_id, language_code, attachment):
+    def upload_subtitles(self, video_id, subtitles_id, language_code, content):
         """
-        Upload a video subtitles file
+        Upload a video subtitles file. Raise a SubtitlesInvalid in case the subtitles are in an invalid format.
 
         Args:
 
             video_id (str)
             subtitles_id (str)
             language_code (str)
-            attachment (file object)
+            content (bytes)
         """
         raise NotImplementedError
 

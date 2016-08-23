@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.utils.timezone import now
 from celery import shared_task
+import pycaption
 
 from videofront.celery_videofront import send_task
 from . import backend
@@ -183,9 +184,28 @@ def _transcode_video(public_video_id):
         video_transcoding.status = models.VideoTranscoding.STATUS_SUCCESS
         video_transcoding.save()
 
-def upload_subtitles(public_video_id, subtitles_id, language_code, attachment):
-    # TODO shouldn't we convert the subtitles to vtt, first?
-    backend.get().upload_subtitles(public_video_id, subtitles_id, language_code, attachment)
+def upload_subtitles(public_video_id, subtitles_public_id, language_code, content):
+    """
+    Convert subtitles to VTT and upload them.
+
+    Args:
+        public_video_id (str)
+        subtitles_id (str)
+        language_code (str)
+        content (bytes)
+    """
+    # Note: if this ever raises an exception, we should convert it to SubtitlesInvalid
+    content = content.decode('utf-8')
+
+    # Convert to VTT, whatever the initial format
+    content = content.strip("\ufeff\n\r")
+    sub_reader = pycaption.detect_format(content)
+    if sub_reader is None:
+        raise exceptions.SubtitlesInvalid("Could not detect subtitles format")
+    if sub_reader != pycaption.WebVTTReader:
+        content = pycaption.WebVTTWriter().write(sub_reader().read(content))
+
+    backend.get().upload_subtitles(public_video_id, subtitles_public_id, language_code, content)
 
 def delete_resources(public_video_id):
     """ Delete all video assets """

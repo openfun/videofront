@@ -13,6 +13,18 @@ from .base import BaseAuthenticatedTests
 
 
 class VideoSubtitlesTests(BaseAuthenticatedTests):
+    SRT_CONTENT = """1
+00:00:00,822 --> 00:00:01,565
+Hello world!
+
+2
+00:00:01,840 --> 00:00:03,280
+My name is VIDEOFRONT and I am awesome.
+
+3
+00:00:03,920 --> 00:00:08,250
+Also I have utf8 characters: é û ë ï 你好."""
+
 
     @override_plugin_backend(
         upload_subtitles=lambda *args: None,
@@ -21,7 +33,7 @@ class VideoSubtitlesTests(BaseAuthenticatedTests):
     def test_upload_subtitles(self):
         video = factories.VideoFactory(public_id="videoid", owner=self.user)
         url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
-        subfile = StringIO("some srt content in here")
+        subfile = StringIO(self.SRT_CONTENT)
         response = self.client.post(
             url,
             data={
@@ -60,7 +72,7 @@ class VideoSubtitlesTests(BaseAuthenticatedTests):
     def test_upload_subtitles_failed_upload(self, mock_logger):
         factories.VideoFactory(public_id="videoid", owner=self.user)
         url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
-        subfile = StringIO("some srt content in here")
+        subfile = StringIO(self.SRT_CONTENT)
 
         upload_subtitles = Mock(side_effect=ValueError)
         with override_plugin_backend(upload_subtitles=upload_subtitles):
@@ -77,7 +89,7 @@ class VideoSubtitlesTests(BaseAuthenticatedTests):
         video = factories.VideoFactory(public_id="videoid", owner=self.user)
         video.subtitles.create(public_id="subsid", language="fr")
         url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
-        subfile = StringIO("some srt content in here")
+        subfile = StringIO(self.SRT_CONTENT)
 
         with override_plugin_backend(
                 upload_subtitles=lambda *args: None,
@@ -113,3 +125,16 @@ class VideoSubtitlesTests(BaseAuthenticatedTests):
         self.assertEqual(400, response.status_code)
         self.assertIn('attachment', response.json())
         self.assertIn('139', response.json()['attachment'])
+
+    def test_upload_subtitles_invalid_format(self):
+        factories.VideoFactory(public_id="videoid", owner=self.user)
+        subfile = StringIO("Some invalid content here.")
+        response = self.client.post(
+            reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'}), data={
+            'language': 'en',
+            'name': 'subs.srt', 'attachment': subfile
+        })
+        self.assertEqual(400, response.status_code)
+        self.assertIn('attachment', response.json())
+        self.assertEqual('Could not detect subtitles format', response.json()['attachment'])
+        self.assertEqual(0, models.VideoSubtitles.objects.count())
