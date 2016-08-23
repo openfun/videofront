@@ -76,8 +76,18 @@ class VideoUploadUrlTests(TestCase):
     @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')
     def test_get_video_streaming_url(self):
         backend = pipeline.backend.get()
-        self.assertIsNotNone(backend.get_video_streaming_url('videoid', 'SD'))
+        url = backend.get_video_streaming_url('videoid', 'SD')
+        self.assertIsNotNone(url)
+        self.assertTrue(url.startswith("https://s3-dummyawsregion"))
 
+    @override_settings(
+        PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend',
+        CLOUDFRONT_DOMAIN_NAME='cloudfrontid.cloudfront.net'
+    )
+    def test_get_video_streaming_url_with_cloudfront(self):
+        backend = pipeline.backend.get()
+        url = backend.get_video_streaming_url('videoid', 'SD')
+        self.assertEqual("https://cloudfrontid.cloudfront.net/videos/videoid/SD.mp4", url)
 
 @utils.override_s3_settings
 class TranscodeTests(TestCase):
@@ -168,3 +178,9 @@ class SubtitlesTest(TestCase):
         self.assertIn('videoid', url)
         self.assertIn('subsid', url)
         self.assertIn('uk', url)
+
+    @override_settings(CLOUDFRONT_DOMAIN_NAME='cloudfrontid.cloudfront.net')
+    def test_get_subtitles_download_url_cloudfront(self):
+        backend = aws_backend.Backend()
+        url = backend.get_subtitles_download_url('videoid', 'subsid', 'uk')
+        self.assertTrue(url.startswith('https://cloudfrontid.cloudfront.net'))

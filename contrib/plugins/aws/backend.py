@@ -144,6 +144,7 @@ class Backend(pipeline.backend.BaseBackend):
             raise TranscodingFailed(error_message)
         else:
             raise TranscodingFailed('Unknown transcoding status: {}'.format(job_status))
+        # TODO shouldn't we delete original assets once transcoding has ended?
 
     def delete_resources(self, public_video_id):
         folder = self.get_video_folder_key(public_video_id)
@@ -157,17 +158,6 @@ class Backend(pipeline.backend.BaseBackend):
                 Bucket=bucket,
                 Key=obj['Key']
             )
-
-    def get_video_streaming_url(self, public_video_id, format_name):
-        # Note: this assumes that transcoded files are public
-        return (
-            "https://s3-{region}.amazonaws.com/{bucket}/" + self.VIDEO_KEY_PATTERN
-        ).format(
-            region=settings.AWS_REGION,
-            bucket=settings.S3_BUCKET,
-            video_id=public_video_id,
-            resolution=format_name,
-        )
 
     def iter_available_formats(self, public_video_id):
         for resolution, _preset_id, bitrate in settings.ELASTIC_TRANSCODER_PRESETS:
@@ -188,13 +178,26 @@ class Backend(pipeline.backend.BaseBackend):
             Key=self.get_subtitles_key(video_id, subtitles_id, language_code),
         )
 
+    def get_video_streaming_url(self, public_video_id, format_name):
+        return self._get_download_base_url() + '/' + self.VIDEO_KEY_PATTERN.format(
+            video_id=public_video_id,
+            resolution=format_name,
+        )
+
     def get_subtitles_download_url(self, video_id, subtitles_id, language):
-        return (
-            "https://s3-{region}.amazonaws.com/{bucket}/" + self.SUBTITLES_KEY_PATTERN
-        ).format(
-            region=settings.AWS_REGION,
-            bucket=settings.S3_BUCKET,
+        return self._get_download_base_url() + '/' + self.SUBTITLES_KEY_PATTERN.format(
             video_id=video_id,
             subtitles_id=subtitles_id,
             language=language,
         )
+
+    def _get_download_base_url(self):
+        cloudfront = getattr(settings, 'CLOUDFRONT_DOMAIN_NAME', None)
+        if cloudfront:
+            # Download from cloudfront
+            return "https://{domain}".format(domain=cloudfront)
+        else:
+            return "https://s3-{region}.amazonaws.com/{bucket}".format(
+                region=settings.AWS_REGION,
+                bucket=settings.S3_BUCKET,
+            )

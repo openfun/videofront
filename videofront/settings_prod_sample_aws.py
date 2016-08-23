@@ -22,6 +22,9 @@ AWS_REGION = 'eu-west-1' # http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/us
 # This is the bucket that will store all video assets.
 S3_BUCKET = 's3bucket'
 
+# Eventually use a cloudfront distribution to stream and download objects
+# CLOUDFRONT_DOMAIN_NAME = "xxxx.cloudfront.net"
+
 # Presets are of the form: (name, ID, bitrate)
 ELASTIC_TRANSCODER_PRESETS = [
     ('LD', '1351620000001-000030', 900),  # System preset: Generic 480p 4:3
