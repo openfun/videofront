@@ -148,5 +148,5 @@ class VideoFormat(models.Model):
     bitrate = models.FloatField(validators=[MinValueValidator(0)])
 
     @property
-    def streaming_url(self):
+    def url(self):
         return backend.get().video_url(self.video.public_id, self.name)

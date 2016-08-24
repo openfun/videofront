@@ -30,11 +30,11 @@ class SubtitleSerializer(serializers.ModelSerializer):
 
 
 class VideoFormatSerializer(serializers.ModelSerializer):
-    streaming_url = serializers.CharField(read_only=True)
+    url = serializers.CharField(read_only=True)
     bitrate = serializers.FloatField(read_only=True)
 
     class Meta:
-        fields = ('name', 'streaming_url', 'bitrate',)
+        fields = ('name', 'url', 'bitrate',)
         model = models.VideoFormat
 
 

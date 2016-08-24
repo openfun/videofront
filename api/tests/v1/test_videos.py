@@ -180,12 +180,12 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual([
             {
                 'name': 'SD',
-                'streaming_url': 'http://example.com/videoid/SD.mp4',
+                'url': 'http://example.com/videoid/SD.mp4',
                 'bitrate': 128
             },
             {
                 'name': 'HD',
-                'streaming_url': 'http://example.com/videoid/HD.mp4',
+                'url': 'http://example.com/videoid/HD.mp4',
                 'bitrate': 256
             },
         ], video['formats'])
