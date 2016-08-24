@@ -9,9 +9,7 @@ class Command(BaseCommand):
     help = 'Bootstrap S3 for video file storage'
 
     def handle(self, *args, **options):
-        self.create_bucket(settings.S3_BUCKET, 'private')
-
-    def create_bucket(self, bucket_name, acl):
+        bucket_name = settings.S3_BUCKET
         backend = Backend()
         try:
             backend.s3_client.head_bucket(Bucket=bucket_name)
@@ -19,9 +17,29 @@ class Command(BaseCommand):
         except ClientError:
             self.stdout.write("Creating bucket {}...".format(bucket_name))
             backend.s3_client.create_bucket(
-                ACL=acl,
+                ACL='private',
                 Bucket=bucket_name,
                 CreateBucketConfiguration={
                     'LocationConstraint': settings.AWS_REGION
+                }
+            )
+            self.stdout.write("Updating CORS configuration...")
+            backend.s3_client.put_bucket_cors(
+                Bucket=bucket_name,
+                CORSConfiguration={
+                    'CORSRules': [
+                        {
+                            'AllowedHeaders': [
+                                '*',
+                            ],
+                            'AllowedMethods': [
+                                'GET', 'PUT',
+                            ],
+                            'AllowedOrigins': [
+                                '*',
+                            ],
+                            'MaxAgeSeconds': 3000
+                        },
+                    ]
                 }
             )
