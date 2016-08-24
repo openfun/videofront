@@ -138,3 +138,30 @@ Also I have utf8 characters: é û ë ï 你好."""
         self.assertIn('attachment', response.json())
         self.assertEqual('Could not detect subtitles format', response.json()['attachment'])
         self.assertEqual(0, models.Subtitles.objects.count())
+
+    def test_get_subtitles(self):
+        video = factories.VideoFactory(public_id='videoid', owner=self.user)
+        factories.SubtitlesFactory(video=video, public_id='subsid', language='fr')
+
+        with override_plugin_backend(
+                get_subtitles_download_url=lambda *args: "http://subs.vtt"
+        ):
+            response = self.client.get(reverse("api:v1:subtitles-detail", kwargs={'id': 'subsid'}))
+
+        self.assertEqual(200, response.status_code)
+        subtitles = response.json()
+        self.assertEqual('fr', subtitles['language'])
+        self.assertEqual('subsid', subtitles['id'])
+        self.assertEqual('http://subs.vtt', subtitles['download_url'])
+
+    def test_delete_subtitles(self):
+        video = factories.VideoFactory(public_id='videoid', owner=self.user)
+        factories.SubtitlesFactory(video=video, public_id='subsid', language='fr')
+
+        mock_backend = Mock(return_value=Mock(delete_subtitles=Mock()))
+        with override_settings(PLUGIN_BACKEND=mock_backend):
+            response = self.client.delete(reverse("api:v1:subtitles-detail", kwargs={'id': 'subsid'}))
+
+        self.assertEqual(204, response.status_code)
+        self.assertEqual(0, models.Subtitles.objects.count())
+        mock_backend.return_value.delete_subtitles.assert_called_once_with('videoid', 'subsid')

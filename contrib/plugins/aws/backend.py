@@ -149,11 +149,19 @@ class Backend(pipeline.backend.BaseBackend):
 
     def delete_resources(self, public_video_id):
         folder = self.get_video_folder_key(public_video_id)
-        self.delete_folder(folder)
+        self.delete_objects(folder)
 
-    def delete_folder(self, folder):
+    def delete_subtitles(self, public_video_id, public_subtitles_id):
+        prefix = self.get_video_folder_key(public_video_id) + 'subs/' + public_subtitles_id + '.'
+        self.delete_objects(prefix)
+
+    def delete_objects(self, prefix):
+        """
+        Recursively delete all objects with the given prefix. This can be used
+        to delete an entire folder.
+        """
         bucket = settings.S3_BUCKET
-        list_objects = self.s3_client.list_objects(Bucket=bucket, Prefix=folder)
+        list_objects = self.s3_client.list_objects(Bucket=bucket, Prefix=prefix)
         for obj in list_objects.get('Contents', []):
             self.s3_client.delete_object(
                 Bucket=bucket,

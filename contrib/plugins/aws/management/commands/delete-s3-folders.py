@@ -12,4 +12,4 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         backend = Backend()
         for folder in options['folders']:
-            backend.delete_folder(folder)
+            backend.delete_objects(folder)

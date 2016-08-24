@@ -73,6 +73,15 @@ class VideoUploadUrlTests(TestCase):
             Bucket='dummys3storagebucket', Prefix='videos/videoid/'
         )
 
+    def test_delete_subtitles(self):
+        backend = aws_backend.Backend()
+        backend._s3_client = Mock(list_objects=Mock(return_value={}))
+        backend.delete_subtitles('videoid', 'subsid')
+
+        backend.s3_client.list_objects.assert_any_call(
+            Bucket='dummys3storagebucket', Prefix='videos/videoid/subs/subsid.'
+        )
+
     @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')
     def test_get_video_streaming_url(self):
         backend = pipeline.backend.get()

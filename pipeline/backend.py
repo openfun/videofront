@@ -65,7 +65,14 @@ class BaseBackend(object):
 
     def delete_resources(self, video_id):
         """
-        Delete all resources associated to a video. E.g: in case of transcoding error.
+        Delete all resources associated to a video. E.g: in case of transcoding
+        error, but also whenever a video is deleted by its owner.
+        """
+        raise NotImplementedError
+
+    def delete_subtitles(self, video_id, subtitles_id):
+        """
+        Delete subtitles from a video.
         """
         raise NotImplementedError
 
@@ -93,7 +100,8 @@ class BaseBackend(object):
 
     def upload_subtitles(self, video_id, subtitles_id, language_code, content):
         """
-        Upload a video subtitles file. Raise a SubtitlesInvalid in case the subtitles are in an invalid format.
+        Upload a video subtitles file. Raise a SubtitlesInvalid in case the
+        subtitles are in an invalid format.
 
         Args:
 

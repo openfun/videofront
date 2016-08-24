@@ -22,8 +22,14 @@ class VideoFactory(factory.DjangoModelFactory):
 
     owner = factory.SubFactory(UserFactory)
 
+
 class PlaylistFactory(factory.DjangoModelFactory):
     class Meta:
         model = models.Playlist
 
     owner = factory.SubFactory(UserFactory)
+
+
+class SubtitlesFactory(factory.DjangoModelFactory):
+    class Meta:
+        model = models.Subtitles

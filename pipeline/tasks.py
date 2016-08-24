@@ -210,3 +210,7 @@ def upload_subtitles(public_video_id, subtitles_public_id, language_code, conten
 def delete_resources(public_video_id):
     """ Delete all video assets """
     backend.get().delete_resources(public_video_id)
+
+def delete_subtitles(public_video_id, public_subtitles_id):
+    """ Delete subtitle associated to video"""
+    backend.get().delete_subtitles(public_video_id, public_subtitles_id)

@@ -185,3 +185,30 @@ class VideoUploadViewSet(viewsets.ViewSet):
 
         url_info = tasks.create_upload_url(request.user.id, filename, playlist_public_id=playlist_public_id)
         return Response(url_info)
+
+
+class SubtitlesViewSet(mixins.RetrieveModelMixin,
+                       mixins.DestroyModelMixin,
+                       viewsets.GenericViewSet):
+    authentication_classes = AUTHENTICATION_CLASSES
+    permission_classes = PERMISSION_CLASSES
+
+    serializer_class = serializers.SubtitlesSerializer
+
+    lookup_field = 'public_id'
+    lookup_url_kwarg = 'id'
+
+
+    def get_queryset(self):
+        queryset = models.Subtitles.objects.select_related(
+            'video'
+        ).exclude(
+            video__transcoding__status=models.VideoTranscoding.STATUS_FAILED
+        ).filter(
+           video__owner=self.request.user
+        )
+        return queryset
+
+    def perform_destroy(self, instance):
+        super(SubtitlesViewSet, self).perform_destroy(instance)
+        tasks.delete_subtitles(instance.video.public_id, instance.public_id)
