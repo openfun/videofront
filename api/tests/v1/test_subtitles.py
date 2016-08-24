@@ -28,7 +28,7 @@ Also I have utf8 characters: é û ë ï 你好."""
 
     @override_plugin_backend(
         upload_subtitle=lambda *args: None,
-        get_subtitle_download_url=lambda *args: "http://example.com/sub.vtt"
+        subtitle_url=lambda *args: "http://example.com/sub.vtt"
     )
     def test_upload_subtitle(self):
         video = factories.VideoFactory(public_id="videoid", owner=self.user)
@@ -93,7 +93,7 @@ Also I have utf8 characters: é û ë ï 你好."""
 
         with override_plugin_backend(
             upload_subtitle=lambda *args: None,
-            get_subtitle_download_url=lambda *args: None
+            subtitle_url=lambda *args: None
         ):
             response = self.client.post(url, data={
                 'id': 'subid',
@@ -144,7 +144,7 @@ Also I have utf8 characters: é û ë ï 你好."""
         factories.SubtitleFactory(video=video, public_id='subid', language='fr')
 
         with override_plugin_backend(
-            get_subtitle_download_url=lambda *args: "http://sub.vtt"
+            subtitle_url=lambda *args: "http://sub.vtt"
         ):
             response = self.client.get(reverse("api:v1:subtitle-detail", kwargs={'id': 'subid'}))
 

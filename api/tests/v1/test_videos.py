@@ -105,9 +105,9 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual(405, response.status_code) # method not allowed
 
     @override_plugin_backend(
-        get_uploaded_video=lambda video_id: None,
-        create_transcoding_jobs=lambda video_id: [],
-        iter_available_formats=lambda video_id: [],
+        check_video=lambda video_id: None,
+        start_transcoding=lambda video_id: [],
+        iter_formats=lambda video_id: [],
     )
     def test_get_video_that_was_just_uploaded(self):
         factories.VideoUploadUrlFactory(
@@ -130,17 +130,17 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual('title2', models.Video.objects.get().title)
 
     def test_delete_video(self):
-        mock_delete_resources = Mock()
+        mock_delete_video = Mock()
         factories.VideoFactory(public_id="videoid", owner=self.user)
-        with override_plugin_backend(delete_resources=mock_delete_resources):
+        with override_plugin_backend(delete_video=mock_delete_video):
             response = self.client.delete(reverse('api:v1:video-detail', kwargs={'id': 'videoid'}))
 
         self.assertEqual(204, response.status_code)
         self.assertEqual(0, models.Video.objects.count())
-        mock_delete_resources.assert_called_once_with('videoid')
+        mock_delete_video.assert_called_once_with('videoid')
 
     @override_plugin_backend(
-        get_subtitle_download_url=lambda vid, sid, lang: "http://example.com/{}.vtt".format(sid)
+        subtitle_url=lambda vid, sid, lang: "http://example.com/{}.vtt".format(sid)
     )
     def test_get_video_with_subtitles(self):
         video = factories.VideoFactory(public_id="videoid", owner=self.user)
@@ -165,9 +165,9 @@ class VideosTests(BaseAuthenticatedTests):
 
 
     @override_plugin_backend(
-        get_video_streaming_url=lambda video_id, format_name:
+        video_url=lambda video_id, format_name:
             "http://example.com/{}/{}.mp4".format(video_id, format_name),
-        iter_available_formats=lambda video_id: [],
+        iter_formats=lambda video_id: [],
     )
     def test_get_video_with_formats(self):
         video = factories.VideoFactory(public_id="videoid", owner=self.user)

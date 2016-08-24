@@ -136,7 +136,7 @@ class Subtitle(models.Model):
 
     @property
     def download_url(self):
-        return backend.get().get_subtitle_download_url(
+        return backend.get().subtitle_url(
             self.video.public_id, self.public_id, self.language
         )
 
@@ -149,4 +149,4 @@ class VideoFormat(models.Model):
 
     @property
     def streaming_url(self):
-        return backend.get().get_video_streaming_url(self.video.public_id, self.name)
+        return backend.get().video_url(self.video.public_id, self.name)

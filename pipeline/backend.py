@@ -4,7 +4,7 @@ from django.conf import settings
 
 class BaseBackend(object):
 
-    def create_upload_url(self, filename):
+    def get_upload_url(self, filename):
         """
         Return an upload url for uploading video files.
 
@@ -21,9 +21,9 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
-    def get_uploaded_video(self, video_id):
+    def check_video(self, video_id):
         """
-        Get the video file for which an upload url was generated.
+        Check if the video file for which an upload url was generated has been uploaded.
 
         This function is only used to check whether an upload url has been used or not.
 
@@ -34,24 +34,23 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
-    def create_transcoding_jobs(self, video_id):
+    def start_transcoding(self, video_id):
         """
         Create and start transcoding jobs.
 
         Returns:
             jobs: iterable of arbitrary job objects. Each of these job objects
-            will be passed as argument to the `get_transcoding_job_progress`
-            method
+            will be passed as argument to the `check_progress` method
         """
         raise NotImplementedError
 
-    def get_transcoding_job_progress(self, job):
+    def check_progress(self, job):
         """
         Monitor the progress of a transcoding job. This method will be called
         periodically by the transcoding task.
 
         Args:
-            job: arbitrary object that was returned by the `create_transcoding_job` method
+            job: arbitrary object that was returned by the `start_transcoding` method
 
         Returns:
             progress (float): progress percentage with a value between 0 and 100
@@ -63,7 +62,7 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
-    def delete_resources(self, video_id):
+    def delete_video(self, video_id):
         """
         Delete all resources associated to a video. E.g: in case of transcoding
         error, but also whenever a video is deleted by its owner.
@@ -76,10 +75,11 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
-    def get_video_streaming_url(self, video_id, format_name):
+    def video_url(self, video_id, format_name):
         """
-        Return the url from which the video can be streamed, with the given
-        format. This is the url that will be passed to the html5 video player.
+        Return the url from which the video can be streamed or downloaded, with
+        the given format. This is the url that will be passed to the html5
+        video player.
 
         Note that there will be one call to this method for every format and
         for every video object, at every call to the videos API. So the result
@@ -87,7 +87,7 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
-    def iter_available_formats(self, video_id):
+    def iter_formats(self, video_id):
         """
         Iterator on the available formats for that video. This method will be
         called after transcoding has finished.
@@ -112,7 +112,7 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
-    def get_subtitle_download_url(self, video_id, subtitle_id, language_code):
+    def subtitle_url(self, video_id, subtitle_id, language_code):
         """
         Returns the url at which the subtitle file can be downloaded. Note
         that this method once for every subtitle object for every API videos

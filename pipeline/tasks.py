@@ -35,7 +35,7 @@ def release_lock(name):
     except TransactionManagementError:
         logger.error("Could not release lock %s", name)
 
-def create_upload_url(user_id, filename, playlist_public_id=None):
+def get_upload_url(user_id, filename, playlist_public_id=None):
     """
     Create an unused video upload url.
 
@@ -47,7 +47,7 @@ def create_upload_url(user_id, filename, playlist_public_id=None):
     }
     """
     user = User.objects.get(id=user_id)
-    upload_url = backend.get().create_upload_url(filename)
+    upload_url = backend.get().get_upload_url(filename)
 
     public_video_id = upload_url["id"]
     expires_at = upload_url['expires_at']
@@ -95,7 +95,7 @@ def monitor_uploads(public_video_ids=None):
         urls_queryset = urls_queryset.filter(public_video_id__in=public_video_ids)
     for upload_url in urls_queryset:
         try:
-            backend.get().get_uploaded_video(upload_url.public_video_id)
+            backend.get().check_video(upload_url.public_video_id)
             upload_url.was_used = True
         except exceptions.VideoNotUploaded:
             # Upload url was not used yet
@@ -147,7 +147,7 @@ def _transcode_video(public_video_id):
     video_transcoding.started_at = now()
     video_transcoding.save()
 
-    jobs = backend.get().create_transcoding_jobs(public_video_id)
+    jobs = backend.get().start_transcoding(public_video_id)
     success_job_indexes = []
     error_job_indexes = []
     errors = []
@@ -156,7 +156,7 @@ def _transcode_video(public_video_id):
         for job_index, job in enumerate(jobs):
             if job_index not in success_job_indexes and job_index not in error_job_indexes:
                 try:
-                    jobs_progress[job_index], finished = backend.get().get_transcoding_job_progress(job)
+                    jobs_progress[job_index], finished = backend.get().check_progress(job)
                     if finished:
                         success_job_indexes.append(job_index)
                 except exceptions.TranscodingFailed as e:
@@ -174,11 +174,11 @@ def _transcode_video(public_video_id):
         # In case of errors, wipe all data
         video_transcoding.status = models.VideoTranscoding.STATUS_FAILED
         video_transcoding.save()
-        delete_resources(public_video_id)
+        delete_video(public_video_id)
     else:
         # Create video formats first so that they are available as soon as the
         # video object becomes available from the API
-        for format_name, bitrate in backend.get().iter_available_formats(public_video_id):
+        for format_name, bitrate in backend.get().iter_formats(public_video_id):
             models.VideoFormat.objects.create(video=video, name=format_name, bitrate=bitrate)
 
         video_transcoding.status = models.VideoTranscoding.STATUS_SUCCESS
@@ -207,9 +207,9 @@ def upload_subtitle(public_video_id, subtitle_public_id, language_code, content)
 
     backend.get().upload_subtitle(public_video_id, subtitle_public_id, language_code, content)
 
-def delete_resources(public_video_id):
+def delete_video(public_video_id):
     """ Delete all video assets """
-    backend.get().delete_resources(public_video_id)
+    backend.get().delete_video(public_video_id)
 
 def delete_subtitle(public_video_id, public_subtitle_id):
     """ Delete subtitle associated to video"""

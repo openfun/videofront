@@ -81,7 +81,7 @@ class Backend(pipeline.backend.BaseBackend):
     # Overridden methods
     ####################
 
-    def create_upload_url(self, filename):
+    def get_upload_url(self, filename):
         """
         Generate video upload urls for storage on Amazon S3
         """
@@ -104,7 +104,7 @@ class Backend(pipeline.backend.BaseBackend):
             'expires_at': expires_at
         }
 
-    def get_uploaded_video(self, public_video_id):
+    def check_video(self, public_video_id):
         # List content of 'src' folder
         key = self.get_src_file_key(public_video_id)
         if key is None:
@@ -113,7 +113,7 @@ class Backend(pipeline.backend.BaseBackend):
             # connection drops during upload.
             raise VideoNotUploaded
 
-    def create_transcoding_jobs(self, public_video_id):
+    def start_transcoding(self, public_video_id):
         pipeline_id = settings.ELASTIC_TRANSCODER_PIPELINE_ID
 
         jobs = []
@@ -132,7 +132,7 @@ class Backend(pipeline.backend.BaseBackend):
             jobs.append(job['Job'])
         return jobs
 
-    def get_transcoding_job_progress(self, job):
+    def check_progress(self, job):
         job_id = job['Id']
         job_update = self.elastictranscoder_client.read_job(Id=job_id)
         job_status = job_update['Job']['Output']['Status']
@@ -148,7 +148,7 @@ class Backend(pipeline.backend.BaseBackend):
             raise TranscodingFailed('Unknown transcoding status: {}'.format(job_status))
         # TODO shouldn't we delete original assets once transcoding has ended?
 
-    def delete_resources(self, public_video_id):
+    def delete_video(self, public_video_id):
         folder = self.get_video_folder_key(public_video_id)
         self.delete_objects(folder)
 
@@ -169,7 +169,7 @@ class Backend(pipeline.backend.BaseBackend):
                 Key=obj['Key']
             )
 
-    def iter_available_formats(self, public_video_id):
+    def iter_formats(self, public_video_id):
         for resolution, _preset_id, bitrate in settings.ELASTIC_TRANSCODER_PRESETS:
             try:
                 self.s3_client.head_object(
@@ -188,13 +188,13 @@ class Backend(pipeline.backend.BaseBackend):
             Key=self.get_subtitle_key(video_id, subtitle_id, language_code),
         )
 
-    def get_video_streaming_url(self, public_video_id, format_name):
+    def video_url(self, public_video_id, format_name):
         return self._get_download_base_url() + '/' + self.VIDEO_KEY_PATTERN.format(
             video_id=public_video_id,
             resolution=format_name,
         )
 
-    def get_subtitle_download_url(self, video_id, subtitle_id, language):
+    def subtitle_url(self, video_id, subtitle_id, language):
         return self._get_download_base_url() + '/' + self.SUBTITLE_KEY_PATTERN.format(
             video_id=video_id,
             subtitle_id=subtitle_id,

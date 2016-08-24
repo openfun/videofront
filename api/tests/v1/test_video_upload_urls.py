@@ -11,7 +11,7 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
 
     def setUp(self):
         super(VideoUploadUrlTests, self).setUp()
-        self.create_upload_url = Mock(return_value={
+        self.get_upload_url = Mock(return_value={
             'url': 'http://example.com',
             'method': 'POST',
             'id': 'videoid',
@@ -21,12 +21,12 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
     def test_obtain_video_upload_url(self):
         url = reverse("api:v1:videoupload-list")
 
-        with override_plugin_backend(create_upload_url=self.create_upload_url):
+        with override_plugin_backend(get_upload_url=self.get_upload_url):
             response = self.client.post(url, {'filename': 'Some file.mp4'})
 
         self.assertEqual(200, response.status_code)
         upload_url = response.json()
-        self.create_upload_url.assert_called_once_with('Some file.mp4')
+        self.get_upload_url.assert_called_once_with('Some file.mp4')
         self.assertIn("url", upload_url)
         self.assertEqual("http://example.com", upload_url["url"])
         self.assertIn("method", upload_url)
@@ -42,7 +42,7 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
 
     def test_obtain_video_upload_url_with_playlist_id(self):
         playlist = factories.PlaylistFactory(owner=self.user)
-        with override_plugin_backend(create_upload_url=self.create_upload_url):
+        with override_plugin_backend(get_upload_url=self.get_upload_url):
             self.client.post(reverse("api:v1:videoupload-list"), {
                 'playlist_id': playlist.public_id,
                 'filename': 'Some file.mp4'
@@ -52,7 +52,7 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
 
 
     def test_obtain_video_upload_url_with_invalid_playlist_id(self):
-        with override_plugin_backend(create_upload_url=self.create_upload_url):
+        with override_plugin_backend(get_upload_url=self.get_upload_url):
             response = self.client.post(reverse("api:v1:videoupload-list"), {
                 'playlist_id': 'dummy_id',
                 'filename': 'Some file.mp4'
@@ -64,7 +64,7 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
         # Create factory from different owner
         playlist = factories.PlaylistFactory()
 
-        with override_plugin_backend(create_upload_url=self.create_upload_url):
+        with override_plugin_backend(get_upload_url=self.get_upload_url):
             response = self.client.post(reverse("api:v1:videoupload-list"), {
                 'playlist_id': playlist.public_id,
                 'filename': 'Some file.mp4'

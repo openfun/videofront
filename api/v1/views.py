@@ -121,7 +121,7 @@ class VideoViewSet(mixins.RetrieveModelMixin,
     def perform_destroy(self, instance):
         # Delete external resources
         super(VideoViewSet, self).perform_destroy(instance)
-        tasks.delete_resources(instance.public_id)
+        tasks.delete_video(instance.public_id)
 
     @detail_route(methods=['POST'])
     def subtitles(self, request, **kwargs):
@@ -183,7 +183,7 @@ class VideoUploadViewSet(viewsets.ViewSet):
             except models.Playlist.DoesNotExist:
                 return Response({'playlist_id': "Does not exist"}, status=status.HTTP_400_BAD_REQUEST)
 
-        url_info = tasks.create_upload_url(request.user.id, filename, playlist_public_id=playlist_public_id)
+        url_info = tasks.get_upload_url(request.user.id, filename, playlist_public_id=playlist_public_id)
         return Response(url_info)
 
 

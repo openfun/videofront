@@ -47,13 +47,13 @@ class LockTests(TransactionTestCase):
 class TasksTests(TestCase):
 
     def test_monitor_uploads(self):
-        def get_uploaded_video(video_id):
+        def check_video(video_id):
             if video_id == "videoid1":
                 raise exceptions.VideoNotUploaded
         mock_backend = Mock(return_value=Mock(
-            create_transcoding_jobs=Mock(return_value=[]),# Don't start any transcoding
-            get_uploaded_video=get_uploaded_video,
-            iter_available_formats=Mock(return_value=[]),
+            start_transcoding=Mock(return_value=[]),# Don't start any transcoding
+            check_video=check_video,
+            iter_formats=Mock(return_value=[]),
         ))
 
         factories.VideoUploadUrlFactory(
@@ -80,7 +80,7 @@ class TasksTests(TestCase):
         self.assertEqual(1, models.Video.objects.count())
         self.assertEqual('video2.mp4', models.Video.objects.get().title)
         self.assertEqual(url2.owner, models.Video.objects.get().owner)
-        mock_backend.return_value.create_transcoding_jobs.assert_called_once_with('videoid2')
+        mock_backend.return_value.start_transcoding.assert_called_once_with('videoid2')
 
     def test_monitor_uploads_task(self):
         tasks.monitor_uploads_task()
@@ -95,15 +95,15 @@ class TasksTests(TestCase):
             was_used=False, last_checked=None
         )
         mock_backend = Mock(return_value=Mock(
-            create_transcoding_jobs=Mock(return_value=[]),
-            iter_available_formats=Mock(return_value=[]),
+            start_transcoding=Mock(return_value=[]),
+            iter_formats=Mock(return_value=[]),
         ))
         with override_settings(PLUGIN_BACKEND=mock_backend):
             tasks.monitor_uploads()
 
         # We want upload urls to be checked at least once even after they expired.
         self.assertTrue(models.VideoUploadUrl.objects.get(public_video_id='videoid').was_used)
-        mock_backend.return_value.create_transcoding_jobs.assert_called_once_with('videoid')
+        mock_backend.return_value.start_transcoding.assert_called_once_with('videoid')
 
     def test_monitor_uploads_for_already_created_video(self):
         upload_url = factories.VideoUploadUrlFactory(
@@ -133,7 +133,7 @@ class TasksTests(TestCase):
         )
 
         mock_backend = Mock(return_value=Mock(
-            get_uploaded_video=Mock(side_effect=exceptions.VideoNotUploaded)
+            check_video=Mock(side_effect=exceptions.VideoNotUploaded)
         ))
         with override_settings(PLUGIN_BACKEND=mock_backend):
             tasks.monitor_uploads()
@@ -150,8 +150,8 @@ class TasksTests(TestCase):
         )
 
         mock_backend = Mock(return_value=Mock(
-            create_transcoding_jobs=Mock(return_value=[]),
-            iter_available_formats=Mock(return_value=[]),
+            start_transcoding=Mock(return_value=[]),
+            iter_formats=Mock(return_value=[]),
         ))
         with override_settings(PLUGIN_BACKEND=mock_backend):
             tasks.monitor_uploads()
@@ -163,9 +163,9 @@ class TasksTests(TestCase):
     def test_transcode_video_success(self):
         factories.VideoFactory(public_id='videoid')
         mock_backend = Mock(return_value=Mock(
-            create_transcoding_jobs=Mock(return_value=['job1']),
-            get_transcoding_job_progress=Mock(return_value=(42, True)),
-            iter_available_formats=Mock(return_value=[('SD', 128)]),
+            start_transcoding=Mock(return_value=['job1']),
+            check_progress=Mock(return_value=(42, True)),
+            iter_formats=Mock(return_value=[('SD', 128)]),
         ))
 
         with override_settings(PLUGIN_BACKEND=mock_backend):
@@ -176,7 +176,7 @@ class TasksTests(TestCase):
         self.assertEqual(models.VideoTranscoding.STATUS_SUCCESS, video_transcoding.status)
         self.assertEqual("", video_transcoding.message)
         self.assertEqual(42, video_transcoding.progress)
-        mock_backend.return_value.get_transcoding_job_progress.assert_called_once_with('job1')
+        mock_backend.return_value.check_progress.assert_called_once_with('job1')
         self.assertEqual(1, models.VideoFormat.objects.count())
         video_format = models.VideoFormat.objects.get()
         self.assertEqual('videoid', video_format.video.public_id)
@@ -186,7 +186,7 @@ class TasksTests(TestCase):
     def test_transcode_video_failure(self):
         factories.VideoFactory(public_id='videoid')
 
-        def get_transcoding_job_progress(job):
+        def check_progress(job):
             if job == 'job1':
                 # job1 finishes
                 raise exceptions.TranscodingFailed('error message')
@@ -195,9 +195,9 @@ class TasksTests(TestCase):
                 return 100, True
 
         mock_backend = Mock(return_value=Mock(
-            create_transcoding_jobs=Mock(return_value=['job1', 'job2']),
-            get_transcoding_job_progress=get_transcoding_job_progress,
-            iter_available_formats=Mock(return_value=[]),
+            start_transcoding=Mock(return_value=['job1', 'job2']),
+            check_progress=check_progress,
+            iter_formats=Mock(return_value=[]),
         ))
 
         with override_settings(PLUGIN_BACKEND=mock_backend):
@@ -212,17 +212,17 @@ class TasksTests(TestCase):
     def test_transcode_video_twice(self):
         factories.VideoFactory(public_id='videoid')
         mock_backend = Mock(return_value=Mock(
-            create_transcoding_jobs=Mock(return_value=['job1']),
-            iter_available_formats=Mock(return_value=[]),
+            start_transcoding=Mock(return_value=['job1']),
+            iter_formats=Mock(return_value=[]),
         ))
 
         # First attempt: failure
-        mock_backend.return_value.get_transcoding_job_progress = Mock(side_effect=exceptions.TranscodingFailed)
+        mock_backend.return_value.check_progress = Mock(side_effect=exceptions.TranscodingFailed)
         with override_settings(PLUGIN_BACKEND=mock_backend):
             tasks.transcode_video('videoid')
 
         # Second attempt: success
-        mock_backend.return_value.get_transcoding_job_progress = Mock(return_value=(100, True))
+        mock_backend.return_value.check_progress = Mock(return_value=(100, True))
         with override_settings(PLUGIN_BACKEND=mock_backend):
             tasks.transcode_video('videoid')
 
