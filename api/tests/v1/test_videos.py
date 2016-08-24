@@ -154,12 +154,12 @@ class VideosTests(BaseAuthenticatedTests):
             {
                 'id': 'subid1',
                 'language': 'fr',
-                'download_url': 'http://example.com/subid1.vtt'
+                'url': 'http://example.com/subid1.vtt'
             },
             {
                 'id': 'subid2',
                 'language': 'en',
-                'download_url': 'http://example.com/subid2.vtt'
+                'url': 'http://example.com/subid2.vtt'
             },
         ], video['subtitles'])
 

@@ -46,7 +46,7 @@ Also I have utf8 characters: é û ë ï 你好."""
         subtitle = response.json()
         self.assertLess(0, len(subtitle["id"]))
         self.assertEqual("fr", subtitle["language"])
-        self.assertEqual("http://example.com/sub.vtt", subtitle["download_url"])
+        self.assertEqual("http://example.com/sub.vtt", subtitle["url"])
         self.assertEqual(1, video.subtitles.count())
 
     def test_upload_subtitle_invalid_language(self):
@@ -152,7 +152,7 @@ Also I have utf8 characters: é û ë ï 你好."""
         subtitle = response.json()
         self.assertEqual('fr', subtitle['language'])
         self.assertEqual('subid', subtitle['id'])
-        self.assertEqual('http://sub.vtt', subtitle['download_url'])
+        self.assertEqual('http://sub.vtt', subtitle['url'])
 
     def test_delete_subtitle(self):
         video = factories.VideoFactory(public_id='videoid', owner=self.user)

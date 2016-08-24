@@ -135,7 +135,7 @@ class Subtitle(models.Model):
     )
 
     @property
-    def download_url(self):
+    def url(self):
         return backend.get().subtitle_url(
             self.video.public_id, self.public_id, self.language
         )

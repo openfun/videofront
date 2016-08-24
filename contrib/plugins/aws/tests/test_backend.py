@@ -179,7 +179,7 @@ class SubtitleTest(TestCase):
     def test_subtitle_url_compatibility(self):
         video = VideoFactory(public_id='videoid')
         subtitle = video.subtitles.create(language='fr')
-        self.assertIsNotNone(subtitle.download_url)
+        self.assertIsNotNone(subtitle.url)
 
     def subtitle_url(self):
         backend = aws_backend.Backend()
