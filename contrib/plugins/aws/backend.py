@@ -12,7 +12,8 @@ import pipeline.utils
 class Backend(pipeline.backend.BaseBackend):
     VIDEO_FOLDER_KEY_PATTERN = "videos/{video_id}/"
     VIDEO_KEY_PATTERN = VIDEO_FOLDER_KEY_PATTERN + "{resolution}.mp4"
-    SUBTITLES_KEY_PATTERN = VIDEO_FOLDER_KEY_PATTERN + "subs/{subtitles_id}.{language}.vtt"
+    SUBTITLE_BASE_KEY_PATTERN = VIDEO_FOLDER_KEY_PATTERN + "subs/{subtitle_id}."
+    SUBTITLE_KEY_PATTERN = SUBTITLE_BASE_KEY_PATTERN +  "{language}.vtt"
 
     def __init__(self):
         self._session = None
@@ -58,8 +59,8 @@ class Backend(pipeline.backend.BaseBackend):
         return cls.VIDEO_KEY_PATTERN.format(video_id=video_id, resolution=resolution)
 
     @classmethod
-    def get_subtitles_key(cls, video_id, subtitles_id, language):
-        return cls.SUBTITLES_KEY_PATTERN.format(video_id=video_id, subtitles_id=subtitles_id, language=language)
+    def get_subtitle_key(cls, video_id, subtitle_id, language):
+        return cls.SUBTITLE_KEY_PATTERN.format(video_id=video_id, subtitle_id=subtitle_id, language=language)
 
     def get_src_file_key(self, public_video_id):
         """
@@ -151,8 +152,8 @@ class Backend(pipeline.backend.BaseBackend):
         folder = self.get_video_folder_key(public_video_id)
         self.delete_objects(folder)
 
-    def delete_subtitles(self, public_video_id, public_subtitles_id):
-        prefix = self.get_video_folder_key(public_video_id) + 'subs/' + public_subtitles_id + '.'
+    def delete_subtitle(self, public_video_id, public_subtitle_id):
+        prefix = self.SUBTITLE_BASE_KEY_PATTERN.format(video_id=public_video_id, subtitle_id=public_subtitle_id)
         self.delete_objects(prefix)
 
     def delete_objects(self, prefix):
@@ -179,12 +180,12 @@ class Backend(pipeline.backend.BaseBackend):
                 continue
             yield resolution, bitrate
 
-    def upload_subtitles(self, video_id, subtitles_id, language_code, content):
+    def upload_subtitle(self, video_id, subtitle_id, language_code, content):
         self.s3_client.put_object(
             ACL='public-read',
             Body=content,
             Bucket=settings.S3_BUCKET,
-            Key=self.get_subtitles_key(video_id, subtitles_id, language_code),
+            Key=self.get_subtitle_key(video_id, subtitle_id, language_code),
         )
 
     def get_video_streaming_url(self, public_video_id, format_name):
@@ -193,10 +194,10 @@ class Backend(pipeline.backend.BaseBackend):
             resolution=format_name,
         )
 
-    def get_subtitles_download_url(self, video_id, subtitles_id, language):
-        return self._get_download_base_url() + '/' + self.SUBTITLES_KEY_PATTERN.format(
+    def get_subtitle_download_url(self, video_id, subtitle_id, language):
+        return self._get_download_base_url() + '/' + self.SUBTITLE_KEY_PATTERN.format(
             video_id=video_id,
-            subtitles_id=subtitles_id,
+            subtitle_id=subtitle_id,
             language=language,
         )
 

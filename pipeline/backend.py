@@ -70,9 +70,9 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
-    def delete_subtitles(self, video_id, subtitles_id):
+    def delete_subtitle(self, video_id, subtitle_id):
         """
-        Delete subtitles from a video.
+        Delete subtitle from a video.
         """
         raise NotImplementedError
 
@@ -98,23 +98,23 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
-    def upload_subtitles(self, video_id, subtitles_id, language_code, content):
+    def upload_subtitle(self, video_id, subtitle_id, language_code, content):
         """
-        Upload a video subtitles file. Raise a SubtitlesInvalid in case the
-        subtitles are in an invalid format.
+        Upload a video subtitle file. Raise a SubtitleInvalid in case the
+        subtitle is in an invalid format.
 
         Args:
 
             video_id (str)
-            subtitles_id (str)
+            subtitle_id (str)
             language_code (str)
             content (bytes)
         """
         raise NotImplementedError
 
-    def get_subtitles_download_url(self, video_id, subtitles_id, language_code):
+    def get_subtitle_download_url(self, video_id, subtitle_id, language_code):
         """
-        Returns the url at which the subtitles file can be downloaded. Note
+        Returns the url at which the subtitle file can be downloaded. Note
         that this method once for every subtitle object for every API videos
         API call. So the result of this result should either be fast or cached.
         """

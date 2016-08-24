@@ -19,14 +19,14 @@ class VideoTranscodingSerializer(serializers.ModelSerializer):
         model = models.VideoTranscoding
 
 
-class SubtitlesSerializer(serializers.ModelSerializer):
+class SubtitleSerializer(serializers.ModelSerializer):
     id = serializers.CharField(source='public_id', read_only=True)
     video_id = serializers.CharField(source='video__id', read_only=True)
     download_url = serializers.CharField(read_only=True)
 
     class Meta:
         fields = ('id', 'language', 'video_id', 'download_url')
-        model = models.Subtitles
+        model = models.Subtitle
 
 
 class VideoFormatSerializer(serializers.ModelSerializer):
@@ -41,7 +41,7 @@ class VideoFormatSerializer(serializers.ModelSerializer):
 class VideoSerializer(serializers.ModelSerializer):
     id = serializers.CharField(source='public_id', read_only=True)
     status_details = VideoTranscodingSerializer(source='transcoding', read_only=True)
-    subtitles = SubtitlesSerializer(many=True, read_only=True)
+    subtitles = SubtitleSerializer(many=True, read_only=True)
     formats = VideoFormatSerializer(many=True, read_only=True)
 
     class Meta:

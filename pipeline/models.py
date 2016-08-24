@@ -115,7 +115,7 @@ class VideoTranscoding(models.Model):
     message = models.CharField(max_length=1024, blank=True)
 
 
-class Subtitles(models.Model):
+class Subtitle(models.Model):
 
     LANGUAGE_CHOICES = [(code, name) for code, name in LANGUAGES if len(code) == 2]
 
@@ -136,7 +136,7 @@ class Subtitles(models.Model):
 
     @property
     def download_url(self):
-        return backend.get().get_subtitles_download_url(
+        return backend.get().get_subtitle_download_url(
             self.video.public_id, self.public_id, self.language
         )
 

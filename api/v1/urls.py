@@ -8,7 +8,7 @@ from . import views
 
 router = routers.DefaultRouter()
 router.register(r'playlists', views.PlaylistViewSet, base_name='playlist')
-router.register(r'subtitles', views.SubtitlesViewSet, base_name='subtitles')
+router.register(r'subtitles', views.SubtitleViewSet, base_name='subtitle')
 router.register(r'videos', views.VideoViewSet, base_name='video')
 router.register(r'videouploads', views.VideoUploadViewSet, base_name='videoupload')
 

@@ -140,7 +140,7 @@ class VideosTests(BaseAuthenticatedTests):
         mock_delete_resources.assert_called_once_with('videoid')
 
     @override_plugin_backend(
-        get_subtitles_download_url=lambda vid, sid, lang: "http://example.com/{}.vtt".format(sid)
+        get_subtitle_download_url=lambda vid, sid, lang: "http://example.com/{}.vtt".format(sid)
     )
     def test_get_video_with_subtitles(self):
         video = factories.VideoFactory(public_id="videoid", owner=self.user)

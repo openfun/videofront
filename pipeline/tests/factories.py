@@ -30,6 +30,6 @@ class PlaylistFactory(factory.DjangoModelFactory):
     owner = factory.SubFactory(UserFactory)
 
 
-class SubtitlesFactory(factory.DjangoModelFactory):
+class SubtitleFactory(factory.DjangoModelFactory):
     class Meta:
-        model = models.Subtitles
+        model = models.Subtitle

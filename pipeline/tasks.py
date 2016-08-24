@@ -184,33 +184,33 @@ def _transcode_video(public_video_id):
         video_transcoding.status = models.VideoTranscoding.STATUS_SUCCESS
         video_transcoding.save()
 
-def upload_subtitles(public_video_id, subtitles_public_id, language_code, content):
+def upload_subtitle(public_video_id, subtitle_public_id, language_code, content):
     """
-    Convert subtitles to VTT and upload them.
+    Convert subtitle to VTT and upload it.
 
     Args:
         public_video_id (str)
-        subtitles_id (str)
+        subtitle_id (str)
         language_code (str)
         content (bytes)
     """
-    # Note: if this ever raises an exception, we should convert it to SubtitlesInvalid
+    # Note: if this ever raises an exception, we should convert it to SubtitleInvalid
     content = content.decode('utf-8')
 
     # Convert to VTT, whatever the initial format
     content = content.strip("\ufeff\n\r")
     sub_reader = pycaption.detect_format(content)
     if sub_reader is None:
-        raise exceptions.SubtitlesInvalid("Could not detect subtitles format")
+        raise exceptions.SubtitleInvalid("Could not detect subtitle format")
     if sub_reader != pycaption.WebVTTReader:
         content = pycaption.WebVTTWriter().write(sub_reader().read(content))
 
-    backend.get().upload_subtitles(public_video_id, subtitles_public_id, language_code, content)
+    backend.get().upload_subtitle(public_video_id, subtitle_public_id, language_code, content)
 
 def delete_resources(public_video_id):
     """ Delete all video assets """
     backend.get().delete_resources(public_video_id)
 
-def delete_subtitles(public_video_id, public_subtitles_id):
+def delete_subtitle(public_video_id, public_subtitle_id):
     """ Delete subtitle associated to video"""
-    backend.get().delete_subtitles(public_video_id, public_subtitles_id)
+    backend.get().delete_subtitle(public_video_id, public_subtitle_id)

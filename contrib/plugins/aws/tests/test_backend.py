@@ -73,13 +73,13 @@ class VideoUploadUrlTests(TestCase):
             Bucket='dummys3storagebucket', Prefix='videos/videoid/'
         )
 
-    def test_delete_subtitles(self):
+    def test_delete_subtitle(self):
         backend = aws_backend.Backend()
         backend._s3_client = Mock(list_objects=Mock(return_value={}))
-        backend.delete_subtitles('videoid', 'subsid')
+        backend.delete_subtitle('videoid', 'subid')
 
         backend.s3_client.list_objects.assert_any_call(
-            Bucket='dummys3storagebucket', Prefix='videos/videoid/subs/subsid.'
+            Bucket='dummys3storagebucket', Prefix='videos/videoid/subs/subid.'
         )
 
     @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')
@@ -167,30 +167,30 @@ class TranscodeTests(TestCase):
         self.assertEqual([('HD', 256)], formats)
 
 @utils.override_s3_settings
-class SubtitlesTest(TestCase):
+class SubtitleTest(TestCase):
 
     @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')
     @patch('contrib.plugins.aws.backend.Backend.s3_client')
-    def test_upload_subtitles_compatibility(self, mock_s3_client):
-        pipeline.tasks.upload_subtitles('videoid', 'subid', 'fr', b"WEBVTT")
+    def test_upload_subtitle_compatibility(self, mock_s3_client):
+        pipeline.tasks.upload_subtitle('videoid', 'subid', 'fr', b"WEBVTT")
         mock_s3_client.put_object.assert_called_once()
 
     @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')
-    def test_subtitles_url_compatibility(self):
+    def test_subtitle_url_compatibility(self):
         video = VideoFactory(public_id='videoid')
-        subtitles = video.subtitles.create(language='fr')
-        self.assertIsNotNone(subtitles.download_url)
+        subtitle = video.subtitles.create(language='fr')
+        self.assertIsNotNone(subtitle.download_url)
 
-    def test_get_subtitles_download_url(self):
+    def test_get_subtitle_download_url(self):
         backend = aws_backend.Backend()
-        url = backend.get_subtitles_download_url('videoid', 'subsid', 'uk')
+        url = backend.get_subtitle_download_url('videoid', 'subid', 'uk')
         self.assertIsNotNone(url)
         self.assertIn('videoid', url)
-        self.assertIn('subsid', url)
+        self.assertIn('subid', url)
         self.assertIn('uk', url)
 
     @override_settings(CLOUDFRONT_DOMAIN_NAME='cloudfrontid.cloudfront.net')
-    def test_get_subtitles_download_url_cloudfront(self):
+    def test_get_subtitle_download_url_cloudfront(self):
         backend = aws_backend.Backend()
-        url = backend.get_subtitles_download_url('videoid', 'subsid', 'uk')
+        url = backend.get_subtitle_download_url('videoid', 'subid', 'uk')
         self.assertTrue(url.startswith('https://cloudfrontid.cloudfront.net'))

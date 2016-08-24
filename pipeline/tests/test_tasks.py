@@ -232,9 +232,9 @@ class TasksTests(TestCase):
         self.assertEqual(100, video_transcoding.progress)
 
 
-class SubtitlesTasksTest(TestCase):
+class SubtitleTasksTest(TestCase):
 
-    def test_upload_subtitles(self):
+    def test_upload_subtitle(self):
         srt_content = """1
 00:00:00,822 --> 00:00:01,565
 Hello world!
@@ -258,15 +258,15 @@ My name is VIDEOFRONT and I am awesome.
 Also I have utf8 characters: é û ë ï 你好.
 """
 
-        mock_backend = Mock(return_value=Mock(upload_subtitles=Mock()))
+        mock_backend = Mock(return_value=Mock(upload_subtitle=Mock()))
         with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.upload_subtitles('videoid', 'subtitlesid', 'fr', srt_content.encode('utf-8'))
-        mock_backend.return_value.upload_subtitles.assert_called_once_with('videoid', 'subtitlesid', 'fr', vtt_content)
+            tasks.upload_subtitle('videoid', 'subtitleid', 'fr', srt_content.encode('utf-8'))
+        mock_backend.return_value.upload_subtitle.assert_called_once_with('videoid', 'subtitleid', 'fr', vtt_content)
 
-    def test_upload_subtitles_with_invalid_format(self):
-        mock_backend = Mock(return_value=Mock(upload_subtitles=Mock()))
+    def test_upload_subtitle_with_invalid_format(self):
+        mock_backend = Mock(return_value=Mock(upload_subtitle=Mock()))
         with override_settings(PLUGIN_BACKEND=mock_backend):
             self.assertRaises(
-                exceptions.SubtitlesInvalid,
-                tasks.upload_subtitles, 'videoid', 'subtitlesid', 'fr', b'Some invalid content'
+                exceptions.SubtitleInvalid,
+                tasks.upload_subtitle, 'videoid', 'subtitleid', 'fr', b'Some invalid content'
             )

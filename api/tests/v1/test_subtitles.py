@@ -12,7 +12,7 @@ from pipeline.tests import factories
 from .base import BaseAuthenticatedTests
 
 
-class SubtitlesTests(BaseAuthenticatedTests):
+class SubtitleTests(BaseAuthenticatedTests):
     SRT_CONTENT = """1
 00:00:00,822 --> 00:00:01,565
 Hello world!
@@ -27,10 +27,10 @@ Also I have utf8 characters: é û ë ï 你好."""
 
 
     @override_plugin_backend(
-        upload_subtitles=lambda *args: None,
-        get_subtitles_download_url=lambda *args: "http://example.com/subs.vtt"
+        upload_subtitle=lambda *args: None,
+        get_subtitle_download_url=lambda *args: "http://example.com/sub.vtt"
     )
-    def test_upload_subtitles(self):
+    def test_upload_subtitle(self):
         video = factories.VideoFactory(public_id="videoid", owner=self.user)
         url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
         subfile = StringIO(self.SRT_CONTENT)
@@ -38,18 +38,18 @@ Also I have utf8 characters: é û ë ï 你好."""
             url,
             data={
                 'language': 'fr',
-                'name': 'subs.srt', 'attachment': subfile
+                'name': 'sub.srt', 'attachment': subfile
             },
         )
 
         self.assertEqual(201, response.status_code)
-        subtitles = response.json()
-        self.assertLess(0, len(subtitles["id"]))
-        self.assertEqual("fr", subtitles["language"])
-        self.assertEqual("http://example.com/subs.vtt", subtitles["download_url"])
+        subtitle = response.json()
+        self.assertLess(0, len(subtitle["id"]))
+        self.assertEqual("fr", subtitle["language"])
+        self.assertEqual("http://example.com/sub.vtt", subtitle["download_url"])
         self.assertEqual(1, video.subtitles.count())
 
-    def test_upload_subtitles_invalid_language(self):
+    def test_upload_subtitle_invalid_language(self):
         factories.VideoFactory(public_id="videoid", owner=self.user)
         url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
         # only country codes are accepted
@@ -57,57 +57,57 @@ Also I have utf8 characters: é û ë ï 你好."""
 
         self.assertEqual(400, response.status_code)
         self.assertIn('language', response.json())
-        self.assertEqual(0, models.Subtitles.objects.count())
+        self.assertEqual(0, models.Subtitle.objects.count())
 
-    def test_upload_subtitles_missing_attachment(self):
+    def test_upload_subtitle_missing_attachment(self):
         factories.VideoFactory(public_id="videoid", owner=self.user)
         url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
         response = self.client.post(url, data={'language': 'fr'})
 
         self.assertEqual(400, response.status_code)
         self.assertIn('attachment', response.json())
-        self.assertEqual(0, models.Subtitles.objects.count())
+        self.assertEqual(0, models.Subtitle.objects.count())
 
     @patch('django.core.handlers.base.logger')# mute request logger
-    def test_upload_subtitles_failed_upload(self, mock_logger):
+    def test_upload_subtitle_failed_upload(self, mock_logger):
         factories.VideoFactory(public_id="videoid", owner=self.user)
         url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
         subfile = StringIO(self.SRT_CONTENT)
 
-        upload_subtitles = Mock(side_effect=ValueError)
-        with override_plugin_backend(upload_subtitles=upload_subtitles):
+        upload_subtitle = Mock(side_effect=ValueError)
+        with override_plugin_backend(upload_subtitle=upload_subtitle):
             self.assertRaises(ValueError, self.client.post, url,
                 data={
                     'language': 'fr',
-                    'name': 'subs.srt', 'attachment': subfile
+                    'name': 'sub.srt', 'attachment': subfile
                 },
             )
 
-        self.assertEqual(0, models.Subtitles.objects.count())
+        self.assertEqual(0, models.Subtitle.objects.count())
 
-    def test_cannot_modify_subtitles(self):
+    def test_cannot_modify_subtitle(self):
         video = factories.VideoFactory(public_id="videoid", owner=self.user)
-        video.subtitles.create(public_id="subsid", language="fr")
+        video.subtitles.create(public_id="subid", language="fr")
         url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
         subfile = StringIO(self.SRT_CONTENT)
 
         with override_plugin_backend(
-                upload_subtitles=lambda *args: None,
-                get_subtitles_download_url=lambda *args: None
+            upload_subtitle=lambda *args: None,
+            get_subtitle_download_url=lambda *args: None
         ):
             response = self.client.post(url, data={
-                'id': 'subsid',
+                'id': 'subid',
                 'language': 'en',
-                'name': 'subs.srt', 'attachment': subfile
+                'name': 'sub.srt', 'attachment': subfile
             })
 
-        # Subtitles were in fact created, not modified
+        # Subtitle is in fact created, not modified
         self.assertEqual(201, response.status_code)
-        self.assertEqual('fr', video.subtitles.get(public_id='subsid').language)
-        self.assertEqual('en', video.subtitles.exclude(public_id='subsid').get().language)
+        self.assertEqual('fr', video.subtitles.get(public_id='subid').language)
+        self.assertEqual('en', video.subtitles.exclude(public_id='subid').get().language)
 
     @override_settings(SUBTITLES_MAX_BYTES=139)
-    def test_upload_subtitles_too_large(self):
+    def test_upload_subtitle_too_large(self):
         factories.VideoFactory(public_id="videoid", owner=self.user)
         content = (
             "Some vtt content here. This should as long as a tweet, at"
@@ -120,48 +120,48 @@ Also I have utf8 characters: é û ë ï 你好."""
 
         response = self.client.post(url, data={
             'language': 'en',
-            'name': 'subs.srt', 'attachment': subfile
+            'name': 'sub.srt', 'attachment': subfile
         })
         self.assertEqual(400, response.status_code)
         self.assertIn('attachment', response.json())
         self.assertIn('139', response.json()['attachment'])
 
-    def test_upload_subtitles_invalid_format(self):
+    def test_upload_subtitle_invalid_format(self):
         factories.VideoFactory(public_id="videoid", owner=self.user)
         subfile = StringIO("Some invalid content here.")
         response = self.client.post(
             reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'}), data={
             'language': 'en',
-            'name': 'subs.srt', 'attachment': subfile
+            'name': 'sub.srt', 'attachment': subfile
         })
         self.assertEqual(400, response.status_code)
         self.assertIn('attachment', response.json())
-        self.assertEqual('Could not detect subtitles format', response.json()['attachment'])
-        self.assertEqual(0, models.Subtitles.objects.count())
+        self.assertEqual('Could not detect subtitle format', response.json()['attachment'])
+        self.assertEqual(0, models.Subtitle.objects.count())
 
-    def test_get_subtitles(self):
+    def test_get_subtitle(self):
         video = factories.VideoFactory(public_id='videoid', owner=self.user)
-        factories.SubtitlesFactory(video=video, public_id='subsid', language='fr')
+        factories.SubtitleFactory(video=video, public_id='subid', language='fr')
 
         with override_plugin_backend(
-                get_subtitles_download_url=lambda *args: "http://subs.vtt"
+            get_subtitle_download_url=lambda *args: "http://sub.vtt"
         ):
-            response = self.client.get(reverse("api:v1:subtitles-detail", kwargs={'id': 'subsid'}))
+            response = self.client.get(reverse("api:v1:subtitle-detail", kwargs={'id': 'subid'}))
 
         self.assertEqual(200, response.status_code)
-        subtitles = response.json()
-        self.assertEqual('fr', subtitles['language'])
-        self.assertEqual('subsid', subtitles['id'])
-        self.assertEqual('http://subs.vtt', subtitles['download_url'])
+        subtitle = response.json()
+        self.assertEqual('fr', subtitle['language'])
+        self.assertEqual('subid', subtitle['id'])
+        self.assertEqual('http://sub.vtt', subtitle['download_url'])
 
-    def test_delete_subtitles(self):
+    def test_delete_subtitle(self):
         video = factories.VideoFactory(public_id='videoid', owner=self.user)
-        factories.SubtitlesFactory(video=video, public_id='subsid', language='fr')
+        factories.SubtitleFactory(video=video, public_id='subid', language='fr')
 
-        mock_backend = Mock(return_value=Mock(delete_subtitles=Mock()))
+        mock_backend = Mock(return_value=Mock(delete_subtitle=Mock()))
         with override_settings(PLUGIN_BACKEND=mock_backend):
-            response = self.client.delete(reverse("api:v1:subtitles-detail", kwargs={'id': 'subsid'}))
+            response = self.client.delete(reverse("api:v1:subtitle-detail", kwargs={'id': 'subid'}))
 
         self.assertEqual(204, response.status_code)
-        self.assertEqual(0, models.Subtitles.objects.count())
-        mock_backend.return_value.delete_subtitles.assert_called_once_with('videoid', 'subsid')
+        self.assertEqual(0, models.Subtitle.objects.count())
+        mock_backend.return_value.delete_subtitle.assert_called_once_with('videoid', 'subid')

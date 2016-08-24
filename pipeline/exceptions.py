@@ -19,8 +19,8 @@ class TranscodingFailed(Exception):
     """
     pass
 
-class SubtitlesInvalid(Exception):
+class SubtitleInvalid(Exception):
     """
-    Raised whenever subtitles cannot be converted to utf8 or to VTT format.
+    Raised whenever subtitle cannot be converted to utf8 or to VTT format.
     """
     pass

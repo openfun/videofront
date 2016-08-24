@@ -126,12 +126,12 @@ class VideoViewSet(mixins.RetrieveModelMixin,
     @detail_route(methods=['POST'])
     def subtitles(self, request, **kwargs):
         """
-        Subtitles upload
+        Subtitle upload
 
-        The subtitles file must be added as an "attachment" file object.
+        The subtitle file must be added as an "attachment" file object.
         """
         video = self.get_object()
-        serializer = serializers.SubtitlesSerializer(data=request.data)
+        serializer = serializers.SubtitleSerializer(data=request.data)
 
         serializer.is_valid(raise_exception=True)
         attachment = request.FILES.get("attachment")
@@ -152,9 +152,9 @@ class VideoViewSet(mixins.RetrieveModelMixin,
             # We do this in an atomic transaction to avoid creating db object in
             # case of upload failure
             with transaction.atomic():
-                subtitles = serializer.save(video_id=video.id)
-                tasks.upload_subtitles(video.public_id, subtitles.public_id, subtitles.language, attachment.read())
-        except exceptions.SubtitlesInvalid as e:
+                subtitle = serializer.save(video_id=video.id)
+                tasks.upload_subtitle(video.public_id, subtitle.public_id, subtitle.language, attachment.read())
+        except exceptions.SubtitleInvalid as e:
             return Response({'attachment': e.args[0]}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -187,20 +187,20 @@ class VideoUploadViewSet(viewsets.ViewSet):
         return Response(url_info)
 
 
-class SubtitlesViewSet(mixins.RetrieveModelMixin,
-                       mixins.DestroyModelMixin,
-                       viewsets.GenericViewSet):
+class SubtitleViewSet(mixins.RetrieveModelMixin,
+                      mixins.DestroyModelMixin,
+                      viewsets.GenericViewSet):
     authentication_classes = AUTHENTICATION_CLASSES
     permission_classes = PERMISSION_CLASSES
 
-    serializer_class = serializers.SubtitlesSerializer
+    serializer_class = serializers.SubtitleSerializer
 
     lookup_field = 'public_id'
     lookup_url_kwarg = 'id'
 
 
     def get_queryset(self):
-        queryset = models.Subtitles.objects.select_related(
+        queryset = models.Subtitle.objects.select_related(
             'video'
         ).exclude(
             video__transcoding__status=models.VideoTranscoding.STATUS_FAILED
@@ -210,5 +210,5 @@ class SubtitlesViewSet(mixins.RetrieveModelMixin,
         return queryset
 
     def perform_destroy(self, instance):
-        super(SubtitlesViewSet, self).perform_destroy(instance)
-        tasks.delete_subtitles(instance.video.public_id, instance.public_id)
+        super(SubtitleViewSet, self).perform_destroy(instance)
+        tasks.delete_subtitle(instance.video.public_id, instance.public_id)
