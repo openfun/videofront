@@ -131,7 +131,7 @@ class VideoViewSet(mixins.RetrieveModelMixin,
         The subtitles file must be added as an "attachment" file object.
         """
         video = self.get_object()
-        serializer = serializers.VideoSubtitlesSerializer(data=request.data)
+        serializer = serializers.SubtitlesSerializer(data=request.data)
 
         serializer.is_valid(raise_exception=True)
         attachment = request.FILES.get("attachment")

@@ -12,7 +12,7 @@ from pipeline.tests import factories
 from .base import BaseAuthenticatedTests
 
 
-class VideoSubtitlesTests(BaseAuthenticatedTests):
+class SubtitlesTests(BaseAuthenticatedTests):
     SRT_CONTENT = """1
 00:00:00,822 --> 00:00:01,565
 Hello world!
@@ -57,7 +57,7 @@ Also I have utf8 characters: é û ë ï 你好."""
 
         self.assertEqual(400, response.status_code)
         self.assertIn('language', response.json())
-        self.assertEqual(0, models.VideoSubtitles.objects.count())
+        self.assertEqual(0, models.Subtitles.objects.count())
 
     def test_upload_subtitles_missing_attachment(self):
         factories.VideoFactory(public_id="videoid", owner=self.user)
@@ -66,7 +66,7 @@ Also I have utf8 characters: é û ë ï 你好."""
 
         self.assertEqual(400, response.status_code)
         self.assertIn('attachment', response.json())
-        self.assertEqual(0, models.VideoSubtitles.objects.count())
+        self.assertEqual(0, models.Subtitles.objects.count())
 
     @patch('django.core.handlers.base.logger')# mute request logger
     def test_upload_subtitles_failed_upload(self, mock_logger):
@@ -83,7 +83,7 @@ Also I have utf8 characters: é û ë ï 你好."""
                 },
             )
 
-        self.assertEqual(0, models.VideoSubtitles.objects.count())
+        self.assertEqual(0, models.Subtitles.objects.count())
 
     def test_cannot_modify_subtitles(self):
         video = factories.VideoFactory(public_id="videoid", owner=self.user)
@@ -137,4 +137,4 @@ Also I have utf8 characters: é û ë ï 你好."""
         self.assertEqual(400, response.status_code)
         self.assertIn('attachment', response.json())
         self.assertEqual('Could not detect subtitles format', response.json()['attachment'])
-        self.assertEqual(0, models.VideoSubtitles.objects.count())
+        self.assertEqual(0, models.Subtitles.objects.count())

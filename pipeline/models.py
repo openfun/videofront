@@ -115,7 +115,7 @@ class VideoTranscoding(models.Model):
     message = models.CharField(max_length=1024, blank=True)
 
 
-class VideoSubtitles(models.Model):
+class Subtitles(models.Model):
 
     LANGUAGE_CHOICES = [(code, name) for code, name in LANGUAGES if len(code) == 2]
 
