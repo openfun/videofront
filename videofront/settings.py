@@ -132,6 +132,14 @@ REST_FRAMEWORK = {
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'complete': {
+            'format': '%(levelname)s %(asctime)s %(name)s %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
     'filters': {
         'require_debug_false': {
             '()': 'django.utils.log.RequireDebugFalse',
@@ -149,6 +157,7 @@ LOGGING = {
             'level': 'INFO',
             'filters': ['require_debug_true'],
             'class': 'logging.StreamHandler',
+            'formatter': 'complete',
         },
     },
     'loggers': {
@@ -163,6 +172,10 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'ERROR',
             'propagate': False,
+        },
+        'botocore.vendored.requests.packages.urllib3.connectionpool': {
+            'handlers': ['console'],
+            'level': 'ERROR',
         },
         'py.warnings': {
             'handlers': ['console'],
