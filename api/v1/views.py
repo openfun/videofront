@@ -91,11 +91,11 @@ class VideoViewSet(mixins.RetrieveModelMixin,
 
     def get_queryset(self):
         queryset = models.Video.objects.select_related(
-            'transcoding'
+            'processing_state'
         ).prefetch_related(
             'subtitles', 'formats'
         ).exclude(
-            transcoding__status=models.VideoTranscoding.STATUS_FAILED
+            processing_state__status=models.ProcessingState.STATUS_FAILED
         ).filter(
            owner=self.request.user
         )
@@ -203,7 +203,7 @@ class SubtitleViewSet(mixins.RetrieveModelMixin,
         queryset = models.Subtitle.objects.select_related(
             'video'
         ).exclude(
-            video__transcoding__status=models.VideoTranscoding.STATUS_FAILED
+            video__processing_state__status=models.ProcessingState.STATUS_FAILED
         ).filter(
            video__owner=self.request.user
         )

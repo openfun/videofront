@@ -12,11 +12,11 @@ class PlaylistSerializer(serializers.ModelSerializer):
         model = models.Playlist
 
 
-class VideoTranscodingSerializer(serializers.ModelSerializer):
+class ProcessingStateSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = ('status', 'progress', 'started_at')
-        model = models.VideoTranscoding
+        model = models.ProcessingState
 
 
 class SubtitleSerializer(serializers.ModelSerializer):
@@ -40,7 +40,7 @@ class VideoFormatSerializer(serializers.ModelSerializer):
 
 class VideoSerializer(serializers.ModelSerializer):
     id = serializers.CharField(source='public_id', read_only=True)
-    status_details = VideoTranscodingSerializer(source='transcoding', read_only=True)
+    status_details = ProcessingStateSerializer(source='processing_state', read_only=True)
     subtitles = SubtitleSerializer(many=True, read_only=True)
     formats = VideoFormatSerializer(many=True, read_only=True)
 

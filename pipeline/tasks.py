@@ -140,12 +140,10 @@ def _transcode_video(public_video_id):
     This function is not thread-safe. It should only be called by the transcode_video task.
     """
     video = models.Video.objects.get(public_id=public_video_id)
-    # Here We use get_or_create instead of create in order to be able to restart the transcoding job.
-    video_transcoding, _created = models.VideoTranscoding.objects.get_or_create(video=video)
-    video_transcoding.progress = 0
-    video_transcoding.status = models.VideoTranscoding.STATUS_PENDING
-    video_transcoding.started_at = now()
-    video_transcoding.save()
+    video.processing_state.progress = 0
+    video.processing_state.status = models.ProcessingState.STATUS_PENDING
+    video.processing_state.started_at = now()
+    video.processing_state.save()
 
     jobs = backend.get().start_transcoding(public_video_id)
     success_job_indexes = []
@@ -164,16 +162,16 @@ def _transcode_video(public_video_id):
                     error_message = e.args[0] if e.args else ""
                     errors.append(error_message)
 
-        video_transcoding.progress = sum(jobs_progress) * 1. / len(jobs)
-        video_transcoding.status = models.VideoTranscoding.STATUS_PROCESSING
-        video_transcoding.save()
+        video.processing_state.progress = sum(jobs_progress) * 1. / len(jobs)
+        video.processing_state.status = models.ProcessingState.STATUS_PROCESSING
+        video.processing_state.save()
 
-    video_transcoding.message = "\n".join(errors)
+    video.processing_state.message = "\n".join(errors)
     models.VideoFormat.objects.filter(video=video).delete()
     if errors:
         # In case of errors, wipe all data
-        video_transcoding.status = models.VideoTranscoding.STATUS_FAILED
-        video_transcoding.save()
+        video.processing_state.status = models.ProcessingState.STATUS_FAILED
+        video.processing_state.save()
         delete_video(public_video_id)
     else:
         # Create video formats first so that they are available as soon as the
@@ -181,8 +179,8 @@ def _transcode_video(public_video_id):
         for format_name, bitrate in backend.get().iter_formats(public_video_id):
             models.VideoFormat.objects.create(video=video, name=format_name, bitrate=bitrate)
 
-        video_transcoding.status = models.VideoTranscoding.STATUS_SUCCESS
-        video_transcoding.save()
+        video.processing_state.status = models.ProcessingState.STATUS_SUCCESS
+        video.processing_state.save()
 
 def upload_subtitle(public_video_id, subtitle_public_id, language_code, content):
     """

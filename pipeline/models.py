@@ -21,25 +21,25 @@ class Video(models.Model):
     owner = models.ForeignKey(User)
 
     @property
-    def transcoding_status(self):
-        return self.transcoding.status if self.transcoding else None
+    def processing_status(self):
+        return self.processing_state.status if self.processing_state else None
 
     @property
-    def transcoding_progress(self):
-        return self.transcoding.progress if self.transcoding else None
+    def processing_progress(self):
+        return self.processing_state.progress if self.processing_state else None
 
     @property
-    def transcoding_started_at(self):
-        return self.transcoding.started_at if self.transcoding else None
+    def processing_started_at(self):
+        return self.processing_state.started_at if self.processing_state else None
 
 
 @receiver(post_save, sender=Video)
-def create_video_transcoding(sender, instance=None, created=False, **kwargs):
+def create_video_processing_state(sender, instance=None, created=False, **kwargs):
     """
-    Create VideoTranscoding object automatically for every created Video object.
+    Create ProcessingState object automatically for every created Video object.
     """
     if created:
-        VideoTranscoding.objects.create(video=instance)
+        ProcessingState.objects.create(video=instance)
 
 
 class Playlist(models.Model):
@@ -95,7 +95,7 @@ class VideoUploadUrl(models.Model):
     objects = managers.VideoUploadUrlManager()
 
 
-class VideoTranscoding(models.Model):
+class ProcessingState(models.Model):
 
     STATUS_PENDING = 'pending'
     STATUS_PROCESSING = 'processing'
@@ -108,9 +108,9 @@ class VideoTranscoding(models.Model):
         (STATUS_SUCCESS, 'Success'),
     )
 
-    video = models.OneToOneField(Video, related_name='transcoding')
+    video = models.OneToOneField(Video, related_name='processing_state')
     started_at = models.DateTimeField(
-        verbose_name="Time of transcoding job start",
+        verbose_name="Time of processing job start",
         auto_now=True
     )
     progress = models.FloatField(

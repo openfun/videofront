@@ -171,11 +171,11 @@ class TasksTests(TestCase):
         with override_settings(PLUGIN_BACKEND=mock_backend):
             tasks.transcode_video('videoid')
 
-        self.assertEqual(1, models.VideoTranscoding.objects.count())
-        video_transcoding = models.VideoTranscoding.objects.get()
-        self.assertEqual(models.VideoTranscoding.STATUS_SUCCESS, video_transcoding.status)
-        self.assertEqual("", video_transcoding.message)
-        self.assertEqual(42, video_transcoding.progress)
+        self.assertEqual(1, models.ProcessingState.objects.count())
+        video_processing_state = models.ProcessingState.objects.get()
+        self.assertEqual(models.ProcessingState.STATUS_SUCCESS, video_processing_state.status)
+        self.assertEqual("", video_processing_state.message)
+        self.assertEqual(42, video_processing_state.progress)
         mock_backend.return_value.check_progress.assert_called_once_with('job1')
         self.assertEqual(1, models.VideoFormat.objects.count())
         video_format = models.VideoFormat.objects.get()
@@ -203,11 +203,11 @@ class TasksTests(TestCase):
         with override_settings(PLUGIN_BACKEND=mock_backend):
             tasks.transcode_video('videoid')
 
-        self.assertEqual(1, models.VideoTranscoding.objects.count())
-        video_transcoding = models.VideoTranscoding.objects.get()
-        self.assertEqual(models.VideoTranscoding.STATUS_FAILED, video_transcoding.status)
-        self.assertEqual("error message", video_transcoding.message)
-        self.assertEqual(50, video_transcoding.progress)
+        self.assertEqual(1, models.ProcessingState.objects.count())
+        video_processing_state = models.ProcessingState.objects.get()
+        self.assertEqual(models.ProcessingState.STATUS_FAILED, video_processing_state.status)
+        self.assertEqual("error message", video_processing_state.message)
+        self.assertEqual(50, video_processing_state.progress)
 
     def test_transcode_video_twice(self):
         factories.VideoFactory(public_id='videoid')
@@ -226,10 +226,10 @@ class TasksTests(TestCase):
         with override_settings(PLUGIN_BACKEND=mock_backend):
             tasks.transcode_video('videoid')
 
-        video_transcoding = models.VideoTranscoding.objects.get()
-        self.assertEqual(models.VideoTranscoding.STATUS_SUCCESS, video_transcoding.status)
-        self.assertEqual("", video_transcoding.message)
-        self.assertEqual(100, video_transcoding.progress)
+        video_processing_state = models.ProcessingState.objects.get()
+        self.assertEqual(models.ProcessingState.STATUS_SUCCESS, video_processing_state.status)
+        self.assertEqual("", video_processing_state.message)
+        self.assertEqual(100, video_processing_state.progress)
 
 
 class SubtitleTasksTest(TestCase):

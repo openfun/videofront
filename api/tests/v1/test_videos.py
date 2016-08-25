@@ -50,7 +50,8 @@ class VideosTests(BaseAuthenticatedTests):
 
     def test_get_video(self):
         video = factories.VideoFactory(public_id="videoid", title="Some title", owner=self.user)
-        models.VideoTranscoding(video=video, status=models.VideoTranscoding.STATUS_SUCCESS)
+        video.processing_state.status = models.ProcessingState.STATUS_SUCCESS
+        video.processing_state.save()
         response = self.client.get(reverse('api:v1:video-detail', kwargs={'id': 'videoid'}))
         self.assertEqual(200, response.status_code)
         video = response.json()
@@ -59,6 +60,7 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual('Some title', video['title'])
         self.assertEqual([], video['subtitles'])
         self.assertEqual([], video['formats'])
+        self.assertEqual('success', video['status_details']['status'])
 
     def test_get_not_processing_video(self):
         factories.VideoFactory(public_id="videoid", title='videotitle', owner=self.user)
@@ -74,9 +76,9 @@ class VideosTests(BaseAuthenticatedTests):
 
     def test_get_processing_video(self):
         video = factories.VideoFactory(public_id="videoid", title='videotitle', owner=self.user)
-        video.transcoding.progress = 42
-        video.transcoding.status = models.VideoTranscoding.STATUS_PROCESSING
-        video.transcoding.save()
+        video.processing_state.progress = 42
+        video.processing_state.status = models.ProcessingState.STATUS_PROCESSING
+        video.processing_state.save()
         videos = self.client.get(reverse("api:v1:video-list")).json()
 
         self.assertEqual('processing', videos[0]['status_details']['status'])
@@ -84,8 +86,8 @@ class VideosTests(BaseAuthenticatedTests):
 
     def test_list_failed_videos(self):
         video = factories.VideoFactory(public_id="videoid", title='videotitle', owner=self.user)
-        video.transcoding.status = models.VideoTranscoding.STATUS_FAILED
-        video.transcoding.save()
+        video.processing_state.status = models.ProcessingState.STATUS_FAILED
+        video.processing_state.save()
 
         videos = self.client.get(reverse("api:v1:video-list")).json()
         self.assertEqual([], videos)

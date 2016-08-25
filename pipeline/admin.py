@@ -3,20 +3,20 @@ from django.contrib import admin
 from . import models
 
 
-class VideoTranscodingInlineAdmin(admin.TabularInline):
-    model = models.VideoTranscoding
+class ProcessingStateInlineAdmin(admin.TabularInline):
+    model = models.ProcessingState
 
 
 class VideoAdmin(admin.ModelAdmin):
     list_display = (
         'public_id', 'title', 'owner',
-        'transcoding_progress', 'transcoding_status', 'transcoding_started_at',
+        'processing_progress', 'processing_status', 'processing_started_at',
     )
-    inlines = [VideoTranscodingInlineAdmin]
+    inlines = [ProcessingStateInlineAdmin]
 
     def get_queryset(self, request):
         qs = super(VideoAdmin, self).get_queryset(request)
-        return qs.select_related('transcoding')
+        return qs.select_related('processing_state')
 
 
 class VideoUploadUrlAdmin(admin.ModelAdmin):
