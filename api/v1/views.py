@@ -128,20 +128,20 @@ class VideoViewSet(mixins.RetrieveModelMixin,
         """
         Subtitle upload
 
-        The subtitle file must be added as an "attachment" file object.
+        The subtitle file must be added as a "file" file object.
         """
         video = self.get_object()
         serializer = serializers.SubtitleSerializer(data=request.data)
 
         serializer.is_valid(raise_exception=True)
-        attachment = request.FILES.get("attachment")
+        attachment = request.FILES.get("file")
 
         if not attachment:
-            return Response({'attachment': "Missing attachment"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'file': "Missing file"}, status=status.HTTP_400_BAD_REQUEST)
         if attachment.size > settings.SUBTITLES_MAX_BYTES:
             return Response(
                 {
-                    'attachment': "Attachment too large. Maximum allowed size: {} bytes".format(
+                    'file': "File too large. Maximum allowed size: {} bytes".format(
                         settings.SUBTITLES_MAX_BYTES
                     )
                 },
@@ -155,7 +155,7 @@ class VideoViewSet(mixins.RetrieveModelMixin,
                 subtitle = serializer.save(video_id=video.id)
                 tasks.upload_subtitle(video.public_id, subtitle.public_id, subtitle.language, attachment.read())
         except exceptions.SubtitleInvalid as e:
-            return Response({'attachment': e.args[0]}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'file': e.args[0]}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

@@ -38,7 +38,7 @@ Also I have utf8 characters: é û ë ï 你好."""
             url,
             data={
                 'language': 'fr',
-                'name': 'sub.srt', 'attachment': subfile
+                'name': 'sub.srt', 'file': subfile
             },
         )
 
@@ -59,13 +59,13 @@ Also I have utf8 characters: é û ë ï 你好."""
         self.assertIn('language', response.json())
         self.assertEqual(0, models.Subtitle.objects.count())
 
-    def test_upload_subtitle_missing_attachment(self):
+    def test_upload_subtitle_missing_file(self):
         factories.VideoFactory(public_id="videoid", owner=self.user)
         url = reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'})
         response = self.client.post(url, data={'language': 'fr'})
 
         self.assertEqual(400, response.status_code)
-        self.assertIn('attachment', response.json())
+        self.assertIn('file', response.json())
         self.assertEqual(0, models.Subtitle.objects.count())
 
     @patch('django.core.handlers.base.logger')# mute request logger
@@ -79,7 +79,7 @@ Also I have utf8 characters: é û ë ï 你好."""
             self.assertRaises(ValueError, self.client.post, url,
                 data={
                     'language': 'fr',
-                    'name': 'sub.srt', 'attachment': subfile
+                    'name': 'sub.srt', 'file': subfile
                 },
             )
 
@@ -98,7 +98,7 @@ Also I have utf8 characters: é û ë ï 你好."""
             response = self.client.post(url, data={
                 'id': 'subid',
                 'language': 'en',
-                'name': 'sub.srt', 'attachment': subfile
+                'name': 'sub.srt', 'file': subfile
             })
 
         # Subtitle is in fact created, not modified
@@ -120,11 +120,11 @@ Also I have utf8 characters: é û ë ï 你好."""
 
         response = self.client.post(url, data={
             'language': 'en',
-            'name': 'sub.srt', 'attachment': subfile
+            'name': 'sub.srt', 'file': subfile
         })
         self.assertEqual(400, response.status_code)
-        self.assertIn('attachment', response.json())
-        self.assertIn('139', response.json()['attachment'])
+        self.assertIn('file', response.json())
+        self.assertIn('139', response.json()['file'])
 
     def test_upload_subtitle_invalid_format(self):
         factories.VideoFactory(public_id="videoid", owner=self.user)
@@ -132,11 +132,11 @@ Also I have utf8 characters: é û ë ï 你好."""
         response = self.client.post(
             reverse("api:v1:video-subtitles", kwargs={'id': 'videoid'}), data={
             'language': 'en',
-            'name': 'sub.srt', 'attachment': subfile
+            'name': 'sub.srt', 'file': subfile
         })
         self.assertEqual(400, response.status_code)
-        self.assertIn('attachment', response.json())
-        self.assertEqual('Could not detect subtitle format', response.json()['attachment'])
+        self.assertIn('file', response.json())
+        self.assertEqual('Could not detect subtitle format', response.json()['file'])
         self.assertEqual(0, models.Subtitle.objects.count())
 
     def test_get_subtitle(self):
