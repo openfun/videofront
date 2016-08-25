@@ -77,6 +77,17 @@ class Backend(pipeline.backend.BaseBackend):
             return objects['Contents'][0]['Key']
         return None
 
+    def _get_download_base_url(self):
+        cloudfront = getattr(settings, 'CLOUDFRONT_DOMAIN_NAME', None)
+        if cloudfront:
+            # Download from cloudfront
+            return "https://{domain}".format(domain=cloudfront)
+        else:
+            return "https://s3-{region}.amazonaws.com/{bucket}".format(
+                region=settings.AWS_REGION,
+                bucket=settings.S3_BUCKET,
+            )
+
     ####################
     # Overridden methods
     ####################
@@ -116,9 +127,20 @@ class Backend(pipeline.backend.BaseBackend):
 
     def start_transcoding(self, public_video_id):
         pipeline_id = settings.ELASTIC_TRANSCODER_PIPELINE_ID
-
-        jobs = []
         src_file_key = self.get_src_file_key(public_video_id)
+
+        # Extract thumbnails
+        self.elastictranscoder_client.create_job(
+            PipelineId=pipeline_id,
+            Input={'Key': src_file_key},
+            Output={
+                'ThumbnailPattern': self.get_video_folder_key(public_video_id) + 'thumbs/{count}.jpg',
+                'PresetId': settings.ELASTIC_TRANSCODER_THUMBNAILS_PRESET,
+            }
+        )
+
+        # Start transcoding jobs
+        jobs = []
         for resolution, preset_id, _bitrate in settings.ELASTIC_TRANSCODER_PRESETS:
             job = self.elastictranscoder_client.create_job(
                 PipelineId=pipeline_id,
@@ -202,13 +224,6 @@ class Backend(pipeline.backend.BaseBackend):
             language=language,
         )
 
-    def _get_download_base_url(self):
-        cloudfront = getattr(settings, 'CLOUDFRONT_DOMAIN_NAME', None)
-        if cloudfront:
-            # Download from cloudfront
-            return "https://{domain}".format(domain=cloudfront)
-        else:
-            return "https://s3-{region}.amazonaws.com/{bucket}".format(
-                region=settings.AWS_REGION,
-                bucket=settings.S3_BUCKET,
-            )
+    def thumbnail_url(self, video_id):
+        # Use the first generated thumbnail as the video thumbnail
+        return self.get_video_folder_key(video_id) + 'thumbs/00001.jpg'

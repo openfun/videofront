@@ -120,6 +120,16 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
+    def thumbnail_url(self, video_id):
+        """
+        Returns the url at which the video thumbnail can be downloaded. This
+        should be a fast method.
+
+        This feature is optional. If undefined, the thumbnail url will be an
+        empty string.
+        """
+        return ''
+
 
 class UndefinedPluginBackend(Exception):
     pass

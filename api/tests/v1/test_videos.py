@@ -212,3 +212,12 @@ class VideosTests(BaseAuthenticatedTests):
 
         self.assertEqual(1, len(videos))
         self.assertEqual(video_in_playlist.public_id, videos[0]["id"])
+
+    @override_plugin_backend(
+        thumbnail_url=lambda video_id: "http://imgur.com/{}/thumb.jpg".format(video_id),
+    )
+    def test_get_video_thumbnail(self):
+        factories.VideoFactory(public_id="videoid", owner=self.user)
+        video = self.client.get(reverse("api:v1:video-detail", kwargs={'id': 'videoid'})).json()
+        self.assertIn('thumbnail', video)
+        self.assertEqual("http://imgur.com/videoid/thumb.jpg", video['thumbnail'])

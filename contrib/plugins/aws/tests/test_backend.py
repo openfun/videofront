@@ -102,8 +102,11 @@ class VideoUploadUrlTests(TestCase):
 @utils.override_s3_settings
 class TranscodeTests(TestCase):
 
-    @override_settings(ELASTIC_TRANSCODER_PIPELINE_ID='pipelineid')
-    @override_settings(ELASTIC_TRANSCODER_PRESETS=[('SD', 'presetid', 128)])
+    @override_settings(
+        ELASTIC_TRANSCODER_PIPELINE_ID='pipelineid',
+        ELASTIC_TRANSCODER_PRESETS=[('SD', 'presetid', 128)],
+        ELASTIC_TRANSCODER_THUMBNAILS_PRESET='thumbspresetid'
+    )
     def test_start_transcoding(self):
         create_job_fixture = utils.load_json_fixture('elastictranscoder_create_job.json')
         backend = aws_backend.Backend()
@@ -116,10 +119,17 @@ class TranscodeTests(TestCase):
         jobs = backend.start_transcoding('videoid')
 
         self.assertEqual(1, len(jobs))
-        backend.elastictranscoder_client.create_job.assert_called_once_with(
+        # Video transcoding
+        backend.elastictranscoder_client.create_job.assert_any_call(
             PipelineId='pipelineid',
             Input={'Key': 'videos/videoid/src/Some video file.mpg'},
-            Output={'PresetId': 'presetid', 'Key': aws_backend.Backend.get_video_key('videoid', 'SD')}
+            Output={'PresetId': 'presetid', 'Key': 'videos/videoid/SD.mp4'}
+        )
+        # Thumbnail generation
+        backend.elastictranscoder_client.create_job.assert_any_call(
+            PipelineId='pipelineid',
+            Input={'Key': 'videos/videoid/src/Some video file.mpg'},
+            Output={'PresetId': 'thumbspresetid', 'ThumbnailPattern': 'videos/videoid/thumbs/{count}.jpg'},
         )
         backend.get_src_file_key.assert_called_once_with('videoid')
 
@@ -138,8 +148,11 @@ class TranscodeTests(TestCase):
             Id='jobid' # job id in test fixture
         )
 
-    @override_settings(ELASTIC_TRANSCODER_PIPELINE_ID='pipelineid')
-    @override_settings(ELASTIC_TRANSCODER_PRESETS=[('SD', 'presetid', 128)])
+    @override_settings(
+        ELASTIC_TRANSCODER_PIPELINE_ID='pipelineid',
+        ELASTIC_TRANSCODER_PRESETS=[('SD', 'presetid', 128)],
+        ELASTIC_TRANSCODER_THUMBNAILS_PRESET='thumbspresetid'
+    )
     def test_transcoding_pipeline_compatibility(self):
         create_job_fixture = utils.load_json_fixture('elastictranscoder_create_job.json')
         read_job_fixture = utils.load_json_fixture('elastictranscoder_read_job_complete.json')
@@ -165,6 +178,13 @@ class TranscodeTests(TestCase):
         formats = list(backend.iter_formats('videoid'))
 
         self.assertEqual([('HD', 256)], formats)
+
+    def test_thumbnail_url(self):
+        backend = aws_backend.Backend()
+        thumbnail_url = backend.thumbnail_url('videoid')
+        self.assertIsNotNone(thumbnail_url)
+        self.assertIn('videoid', thumbnail_url)
+        self.assertIn('00001.jpg', thumbnail_url)
 
 @utils.override_s3_settings
 class SubtitleTest(TestCase):

@@ -32,6 +32,10 @@ class Video(models.Model):
     def processing_started_at(self):
         return self.processing_state.started_at if self.processing_state else None
 
+    @property
+    def thumbnail_url(self):
+        return backend.get().thumbnail_url(self.public_id)
+
 
 @receiver(post_save, sender=Video)
 def create_video_processing_state(sender, instance=None, created=False, **kwargs):
