@@ -60,7 +60,7 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual('Some title', video['title'])
         self.assertEqual([], video['subtitles'])
         self.assertEqual([], video['formats'])
-        self.assertEqual('success', video['status_details']['status'])
+        self.assertEqual('success', video['processing']['status'])
 
     def test_get_not_processing_video(self):
         factories.VideoFactory(public_id="videoid", title='videotitle', owner=self.user)
@@ -70,9 +70,9 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual(1, len(videos))
         self.assertEqual('videoid', videos[0]['id'])
         self.assertEqual('videotitle', videos[0]['title'])
-        self.assertIn('status_details', videos[0])
-        self.assertIsNotNone(videos[0]['status_details'])
-        self.assertEqual('pending', videos[0]['status_details']['status'])
+        self.assertIn('processing', videos[0])
+        self.assertIsNotNone(videos[0]['processing'])
+        self.assertEqual('pending', videos[0]['processing']['status'])
 
     def test_get_processing_video(self):
         video = factories.VideoFactory(public_id="videoid", title='videotitle', owner=self.user)
@@ -81,8 +81,8 @@ class VideosTests(BaseAuthenticatedTests):
         video.processing_state.save()
         videos = self.client.get(reverse("api:v1:video-list")).json()
 
-        self.assertEqual('processing', videos[0]['status_details']['status'])
-        self.assertEqual(42, videos[0]['status_details']['progress'])
+        self.assertEqual('processing', videos[0]['processing']['status'])
+        self.assertEqual(42, videos[0]['processing']['progress'])
 
     def test_list_failed_videos(self):
         video = factories.VideoFactory(public_id="videoid", title='videotitle', owner=self.user)
