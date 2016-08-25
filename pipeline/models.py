@@ -2,6 +2,8 @@ from django.conf.global_settings import LANGUAGES
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator, MinValueValidator, MaxValueValidator
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from . import backend
 from . import managers
@@ -29,6 +31,15 @@ class Video(models.Model):
     @property
     def transcoding_started_at(self):
         return self.transcoding.started_at if self.transcoding else None
+
+
+@receiver(post_save, sender=Video)
+def create_video_transcoding(sender, instance=None, created=False, **kwargs):
+    """
+    Create VideoTranscoding object automatically for every created Video object.
+    """
+    if created:
+        VideoTranscoding.objects.create(video=instance)
 
 
 class Playlist(models.Model):
@@ -110,7 +121,9 @@ class VideoTranscoding(models.Model):
     status = models.CharField(
         verbose_name="Status",
         max_length=32,
-        choices=STATUSES
+        choices=STATUSES,
+        blank=False,
+        default=STATUS_PENDING,
     )
     message = models.CharField(max_length=1024, blank=True)
 

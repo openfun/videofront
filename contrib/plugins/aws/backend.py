@@ -93,6 +93,7 @@ class Backend(pipeline.backend.BaseBackend):
             Params={
                 'Bucket': bucket,
                 'Key': self.get_video_folder_key(video_id) + 'src/' + filename,
+                'ContentType': 'application/octet-stream',
             },
             ExpiresIn=expires_at - time()
         )

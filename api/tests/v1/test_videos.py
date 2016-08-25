@@ -69,15 +69,14 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual('videoid', videos[0]['id'])
         self.assertEqual('videotitle', videos[0]['title'])
         self.assertIn('status_details', videos[0])
-        self.assertEqual(None, videos[0]['status_details'])
+        self.assertIsNotNone(videos[0]['status_details'])
+        self.assertEqual('pending', videos[0]['status_details']['status'])
 
     def test_get_processing_video(self):
         video = factories.VideoFactory(public_id="videoid", title='videotitle', owner=self.user)
-        _transcoding = models.VideoTranscoding.objects.create(
-            video=video,
-            progress=42,
-            status=models.VideoTranscoding.STATUS_PROCESSING
-        )
+        video.transcoding.progress = 42
+        video.transcoding.status = models.VideoTranscoding.STATUS_PROCESSING
+        video.transcoding.save()
         videos = self.client.get(reverse("api:v1:video-list")).json()
 
         self.assertEqual('processing', videos[0]['status_details']['status'])
@@ -85,10 +84,8 @@ class VideosTests(BaseAuthenticatedTests):
 
     def test_list_failed_videos(self):
         video = factories.VideoFactory(public_id="videoid", title='videotitle', owner=self.user)
-        _transcoding = models.VideoTranscoding.objects.create(
-            video=video,
-            status=models.VideoTranscoding.STATUS_FAILED
-        )
+        video.transcoding.status = models.VideoTranscoding.STATUS_FAILED
+        video.transcoding.save()
 
         videos = self.client.get(reverse("api:v1:video-list")).json()
         self.assertEqual([], videos)
