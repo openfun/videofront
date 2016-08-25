@@ -209,6 +209,20 @@ class TasksTests(TestCase):
         self.assertEqual("error message", video_processing_state.message)
         self.assertEqual(50, video_processing_state.progress)
 
+    def test_transcode_video_unexpected_failure(self):
+        factories.VideoFactory(public_id='videoid')
+
+        mock_backend = Mock(return_value=Mock(
+            start_transcoding=Mock(side_effect=ValueError("random error"))
+        ))
+
+        with override_settings(PLUGIN_BACKEND=mock_backend):
+            self.assertRaises(ValueError, tasks.transcode_video, 'videoid')
+
+        video_processing_state = models.ProcessingState.objects.get()
+        self.assertEqual(models.ProcessingState.STATUS_FAILED, video_processing_state.status)
+        self.assertEqual("random error", video_processing_state.message)
+
     def test_transcode_video_twice(self):
         factories.VideoFactory(public_id='videoid')
         mock_backend = Mock(return_value=Mock(

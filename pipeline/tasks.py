@@ -95,6 +95,9 @@ def monitor_uploads(public_video_ids=None):
         urls_queryset = urls_queryset.filter(public_video_id__in=public_video_ids)
     for upload_url in urls_queryset:
         try:
+            # TODO this should really not be synchronous; otherwise, when we
+            # have many upload urls, it will take a very long time to detect
+            # upload urls to process.
             backend.get().check_video(upload_url.public_video_id)
             upload_url.was_used = True
         except exceptions.VideoNotUploaded:
@@ -132,6 +135,15 @@ def transcode_video(public_video_id):
         return
     try:
         _transcode_video(public_video_id)
+    except Exception as e:
+        message = "\n".join(e.args)
+        models.ProcessingState.objects.filter(
+            video__public_id=public_video_id
+        ).update(
+            status=models.ProcessingState.STATUS_FAILED,
+            message=message,
+        )
+        raise
     finally:
         release_lock(lock)
 

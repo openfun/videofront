@@ -101,6 +101,7 @@ class VideoUploadUrl(models.Model):
 
 class ProcessingState(models.Model):
 
+    # TODO insert a STATUS_RESTART to restart processing jobs
     STATUS_PENDING = 'pending'
     STATUS_PROCESSING = 'processing'
     STATUS_FAILED = 'failed'
