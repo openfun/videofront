@@ -13,6 +13,7 @@ class PlaylistSerializer(serializers.ModelSerializer):
 
 
 class ProcessingStateSerializer(serializers.ModelSerializer):
+    started_at = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%SZ")
 
     class Meta:
         fields = ('status', 'progress', 'started_at')

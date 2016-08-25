@@ -3,6 +3,7 @@ from time import time
 
 from django.core.urlresolvers import reverse
 from django.test import TestCase
+from django.utils.timezone import datetime, get_current_timezone
 from mock import Mock
 
 from pipeline import models
@@ -61,6 +62,17 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual([], video['subtitles'])
         self.assertEqual([], video['formats'])
         self.assertEqual('success', video['processing']['status'])
+
+    def test_get_video_processing_state_started_at_truncated_microseconds(self):
+        factories.VideoFactory(public_id='videoid', title="Some title", owner=self.user)
+        started_at = datetime(2016, 1, 1, 12, 13, 14, 1516, get_current_timezone())
+        models.ProcessingState.objects.filter(video__public_id='videoid').update(started_at=started_at)
+
+        response = self.client.get(reverse('api:v1:video-detail', kwargs={'id': 'videoid'}))
+        video = response.json()
+
+        # Check that microseconds are truncated
+        self.assertEqual('2016-01-01T12:13:14Z', video['processing']['started_at'])
 
     def test_get_not_processing_video(self):
         factories.VideoFactory(public_id="videoid", title='videotitle', owner=self.user)
