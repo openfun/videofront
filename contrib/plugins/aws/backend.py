@@ -129,28 +129,23 @@ class Backend(pipeline.backend.BaseBackend):
         pipeline_id = settings.ELASTIC_TRANSCODER_PIPELINE_ID
         src_file_key = self.get_src_file_key(public_video_id)
 
-        # Extract thumbnails
-        self.elastictranscoder_client.create_job(
-            PipelineId=pipeline_id,
-            Input={'Key': src_file_key},
-            Output={
-                'ThumbnailPattern': self.get_video_folder_key(public_video_id) + 'thumbs/{count}.jpg',
-                'PresetId': settings.ELASTIC_TRANSCODER_THUMBNAILS_PRESET,
-            }
-        )
-
         # Start transcoding jobs
         jobs = []
         for resolution, preset_id, _bitrate in settings.ELASTIC_TRANSCODER_PRESETS:
+            output = {
+                # Note that the transcoded video should have public-read
+                # permissions or be accessible by cloudfront
+                'Key': self.get_video_key(public_video_id, resolution),
+                'PresetId': preset_id
+            }
+            # Generate thumbnails
+            if preset_id == settings.ELASTIC_TRANSCODER_THUMBNAILS_PRESET:
+                output['ThumbnailPattern'] = self.get_video_folder_key(public_video_id) + 'thumbs/{count}.jpg'
+
             job = self.elastictranscoder_client.create_job(
                 PipelineId=pipeline_id,
                 Input={'Key': src_file_key},
-                Output={
-                    # Note that the transcoded video should have public-read
-                    # permissions or be accessible by cloudfront
-                    'Key': self.get_video_key(public_video_id, resolution),
-                    'PresetId': preset_id
-                }
+                Output=output
             )
             jobs.append(job['Job'])
         return jobs
