@@ -140,7 +140,7 @@ class Backend(pipeline.backend.BaseBackend):
             }
             # Generate thumbnails
             if preset_id == settings.ELASTIC_TRANSCODER_THUMBNAILS_PRESET:
-                output['ThumbnailPattern'] = self.get_video_folder_key(public_video_id) + 'thumbs/{count}.jpg'
+                output['ThumbnailPattern'] = self.get_video_folder_key(public_video_id) + 'thumbs/{count}'
 
             job = self.elastictranscoder_client.create_job(
                 PipelineId=pipeline_id,
@@ -221,4 +221,4 @@ class Backend(pipeline.backend.BaseBackend):
 
     def thumbnail_url(self, video_id):
         # Use the first generated thumbnail as the video thumbnail
-        return self._get_download_base_url() + '/' + self.get_video_folder_key(video_id) + 'thumbs/00001.jpg'
+        return self._get_download_base_url() + '/' + self.get_video_folder_key(video_id) + 'thumbs/00001.png'

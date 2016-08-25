@@ -158,7 +158,7 @@ class TranscodeTests(TestCase):
             Output={
                 'PresetId': 'hdpresetid',
                 'Key': 'videos/videoid/HD.mp4',
-                'ThumbnailPattern': 'videos/videoid/thumbs/{count}.jpg'
+                'ThumbnailPattern': 'videos/videoid/thumbs/{count}'
             },
         )
 
@@ -213,7 +213,7 @@ class TranscodeTests(TestCase):
         thumbnail_url = backend.thumbnail_url('videoid')
         self.assertIsNotNone(thumbnail_url)
         self.assertIn('videoid', thumbnail_url)
-        self.assertIn('00001.jpg', thumbnail_url)
+        self.assertIn('00001.png', thumbnail_url)
 
 @utils.override_s3_settings
 class SubtitleTest(TestCase):
