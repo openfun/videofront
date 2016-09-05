@@ -17,6 +17,48 @@ from . import models
 logger = logging.getLogger(__name__)
 
 
+class Lock(object):
+    """
+    Lock context manager.
+
+    Usage:
+
+        with Lock('mylockname', timeout=3600) as lock:
+            if lock.is_acquired:
+                run_not_thread_safe_code()
+    """
+
+    def __init__(self, name, timeout=60, wait=False):
+        """
+        Args:
+            name (str)
+            timeout (int): lock expiry duration, in seconds. Set to None if the
+            lock should not expire (not recommended).
+            wait (bool): if True, and if there is a concurrent call to this
+            function, it will block until completion of the concurrent task.
+            Note, however, that in this case the lock will *not* be acquired.
+        """
+        self.name = name
+        self.timeout = timeout
+        self.wait = wait
+        self.is_acquired = False
+
+    def __enter__(self):
+        try:
+            acquire_lock(self.name, expires_in=self.timeout)
+            self.is_acquired = True
+        except exceptions.LockUnavailable:
+            if self.wait:
+                while cache.get(self.name) is not None:
+                    sleep(0.1)
+        return self
+
+    def __exit__(self, exc_t, exc_v, trace):
+        if self.is_acquired:
+            release_lock(self.name)
+            self.is_acquired = False
+
+
 def acquire_lock(name, expires_in=None):
     """
     Acquire a database lock. Raises LockUnavailable when the lock is unavailable.
@@ -26,6 +68,10 @@ def acquire_lock(name, expires_in=None):
     raise exceptions.LockUnavailable(name)
 
 def release_lock(name):
+    """
+    Release a lock for all. Note that the lock will be released even if it was
+    never acquired.
+    """
     # Note that in unit tests, and in case the wrapped code raises an
     # IntegrityError, releasing the cache will result in a
     # TransactionManagementError. This is because unit tests run inside atomic
@@ -35,10 +81,6 @@ def release_lock(name):
         cache.delete(name)
     except TransactionManagementError:
         logger.error("Could not release lock %s", name)
-
-def wait_for_lock(name):
-    while cache.get(name) is not None:
-        sleep(0.1)
 
 def get_upload_url(user_id, filename, playlist_public_id=None):
     """
@@ -98,18 +140,11 @@ def monitor_upload(public_video_id, wait=False):
         function, it will block until completion of the concurrent task.
     """
     # This task should not run if there is already another one running
-    lock = 'TASK_LOCK_MONITOR_UPLOAD:' + public_video_id
-    try:
-        acquire_lock(lock, 60)
-    except exceptions.LockUnavailable:
-        if wait:
-            wait_for_lock(lock)
-        return
-
-    try:
-        _monitor_upload(public_video_id)
-    finally:
-        release_lock(lock)
+    with Lock('TASK_LOCK_MONITOR_UPLOAD:' + public_video_id, 60, wait=wait) as lock:
+        if lock.is_acquired:
+            _monitor_upload(public_video_id)
+        elif wait:
+            lock.wait_until_available()
 
 
 def _monitor_upload(public_video_id):
@@ -143,26 +178,29 @@ def _monitor_upload(public_video_id):
     if video_created:
         send_task('transcode_video', args=(upload_url.public_video_id,))
 
+@shared_task(name='transcode_video_restart')
+def transcode_video_restart():
+    with Lock('TASK_LOCK_TRANSCODE_VIDEO_RESTART', 60) as lock:
+        if lock.is_acquired:
+            for processing_state in models.ProcessingState.objects.filter(status=models.ProcessingState.STATUS_RESTART):
+                send_task('transcode_video', args=(processing_state.video.public_id,))
+
 @shared_task(name='transcode_video')
 def transcode_video(public_video_id):
-    lock = 'TRANSCODE_VIDEO:' + public_video_id
-    try:
-        acquire_lock(lock)
-    except exceptions.LockUnavailable:
-        return
-    try:
-        _transcode_video(public_video_id)
-    except Exception as e:
-        message = "\n".join(e.args)
-        models.ProcessingState.objects.filter(
-            video__public_id=public_video_id
-        ).update(
-            status=models.ProcessingState.STATUS_FAILED,
-            message=message,
-        )
-        raise
-    finally:
-        release_lock(lock)
+    with Lock('TASK_LOCK_TRANSCODE_VIDEO:' + public_video_id, 3600) as lock:
+        if lock.is_acquired:
+            try:
+                _transcode_video(public_video_id)
+            except Exception as e:
+                # Store error message
+                message = "\n".join(e.args)
+                models.ProcessingState.objects.filter(
+                    video__public_id=public_video_id
+                ).update(
+                    status=models.ProcessingState.STATUS_FAILED,
+                    message=message,
+                )
+                raise
 
 def _transcode_video(public_video_id):
     """

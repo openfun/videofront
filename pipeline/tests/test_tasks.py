@@ -43,6 +43,22 @@ class LockTests(TransactionTestCase):
         self.assertRaises(IntegrityError, failing_task)
         self.assertTrue(tasks.acquire_lock("dummylock"))
 
+    def test_context_manager(self):
+
+        # 1) Lock is available
+        with tasks.Lock('dummylock') as lock:
+            self.assertTrue(lock.is_acquired)
+            self.assertRaises(exceptions.LockUnavailable, tasks.acquire_lock, "dummylock")
+
+        self.assertFalse(lock.is_acquired)
+
+        # 2) Lock is unavailable
+        tasks.acquire_lock("dummylock")
+        with tasks.Lock('dummylock') as lock:
+            self.assertFalse(lock.is_acquired)
+
+        self.assertRaises(exceptions.LockUnavailable, tasks.acquire_lock, "dummylock")
+
 
 class TasksTests(TestCase):
 
@@ -249,6 +265,23 @@ class TasksTests(TestCase):
         self.assertEqual(models.ProcessingState.STATUS_SUCCESS, video_processing_state.status)
         self.assertEqual("", video_processing_state.message)
         self.assertEqual(100, video_processing_state.progress)
+
+    def test_transcode_video_restart(self):
+        video = factories.VideoFactory(public_id='videoid')
+        models.ProcessingState.objects.filter(video=video).update(status=models.ProcessingState.STATUS_RESTART)
+
+        mock_backend = Mock(return_value=Mock(
+            start_transcoding=Mock(return_value=[]),
+            iter_formats=Mock(return_value=[]),
+        ))
+        with override_settings(PLUGIN_BACKEND=mock_backend):
+            tasks.transcode_video_restart()
+
+        mock_backend.return_value.start_transcoding.assert_called_once_with('videoid')
+        self.assertEqual(
+            models.ProcessingState.STATUS_SUCCESS,
+            models.ProcessingState.objects.get(video=video).status
+        )
 
 
 class SubtitleTasksTest(TestCase):

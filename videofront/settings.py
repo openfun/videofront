@@ -195,6 +195,10 @@ CELERYBEAT_SCHEDULE = {
         'task': 'monitor_uploads',
         'schedule': timedelta(seconds=5),
     },
+    'transcode_video_restart': {
+        'task': 'transcode_video_restart',
+        'schedule': timedelta(seconds=5),
+    },
 }
 
 ##############################
