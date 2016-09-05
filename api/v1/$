@@ -1,3 +1,4 @@
+import json
 from time import sleep
 
 from django.conf import settings
@@ -106,13 +107,13 @@ class VideoViewSet(mixins.RetrieveModelMixin,
     def retrieve(self, request, *args, **kwargs):
         # We override the `retrieve` method in order to cache API results for
         # /video/<videoid> calls.
-        public_video_id = self.kwargs[self.lookup_url_kwarg or self.lookup_field]
-        response_data = cache.get(public_video_id)
+        video_public_id = self.kwargs[self.lookup_url_kwarg or self.lookup_field]
+        response_data = cache.retrieve_video_cache(video_public_id)
         if response_data is None:
             instance = self.get_object()
             serializer = self.get_serializer(instance)
-            response_data = serializer.data
-            cache.set(public_video_id, response_data)
+            response_data = json.dumps(serializer.data)
+            cache.set_video_cache(public_video_id, response_data)
         return Response(response_data)
 
     def get_object(self):
@@ -127,8 +128,8 @@ class VideoViewSet(mixins.RetrieveModelMixin,
             sleep(0.1)
 
             # Check if the video was not just uploaded and try again
-            public_video_id = self.kwargs[self.lookup_url_kwarg or self.lookup_field]
-            tasks.monitor_upload(public_video_id, wait=True)
+            video_public_id = self.kwargs[self.lookup_url_kwarg or self.lookup_field]
+            tasks.monitor_upload(video_public_id, wait=True)
             return super(VideoViewSet, self).get_object()
 
     def perform_destroy(self, instance):

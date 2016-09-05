@@ -2,10 +2,11 @@ from django.conf.global_settings import LANGUAGES
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator, MinValueValidator, MaxValueValidator
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 from . import backend
+from . import cache
 from . import managers
 from . import utils
 
@@ -169,3 +170,20 @@ class VideoFormat(models.Model):
     @property
     def url(self):
         return backend.get().video_url(self.video.public_id, self.name)
+
+
+@receiver([post_save, post_delete], sender=Video)
+def invalidate_video_cache(sender, instance=None, created=False, **kwargs):
+    if instance:
+        cache.invalidate(instance.public_id)
+
+
+@receiver([post_save, post_delete], sender=Subtitle)
+@receiver([post_save, post_delete], sender=ProcessingState)
+@receiver([post_save, post_delete], sender=VideoFormat)
+def invalidate_related_video_cache(sender, instance=None, created=False, **kwargs):
+    """
+    Invalidate the video cache whenever a related object is saved.
+    """
+    if instance:
+        cache.invalidate(instance.video.public_id)

@@ -3,6 +3,7 @@ from time import time
 
 from django.core.urlresolvers import reverse
 from django.test import TestCase
+from django.test.utils import override_settings
 from django.utils.timezone import datetime, get_current_timezone
 from mock import Mock
 
@@ -21,13 +22,16 @@ class VideosUnauthenticatedTests(TestCase):
         self.assertEqual(401, response.status_code)
 
 
+# Moving the cache to memory is required to obtain an accurate count of the number of SQL queries
+@override_settings(CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}})
 class VideosTests(BaseAuthenticatedTests):
 
     # queries:
     # 1) django session
     # 2) user authentication
+    VIDEOS_LIST_NUM_QUERIES_AUTH = 2
     # 3) video + transcoding job
-    VIDEOS_LIST_NUM_QUERIES_EMPTY_RESULT = 3
+    VIDEOS_LIST_NUM_QUERIES_EMPTY_RESULT = VIDEOS_LIST_NUM_QUERIES_AUTH + 1
     # 4) subtitles prefetch
     # 5) formats prefetch
     VIDEOS_LIST_NUM_QUERIES = VIDEOS_LIST_NUM_QUERIES_EMPTY_RESULT + 2
@@ -95,6 +99,16 @@ class VideosTests(BaseAuthenticatedTests):
 
         self.assertEqual('processing', videos[0]['processing']['status'])
         self.assertEqual(42, videos[0]['processing']['progress'])
+
+    def test_get_video_with_cache(self):
+        factories.VideoFactory(public_id="videoid", title="Some title", owner=self.user)
+        with self.assertNumQueries(self.VIDEOS_LIST_NUM_QUERIES):
+            response1 = self.client.get(reverse('api:v1:video-detail', kwargs={'id': 'videoid'}))
+        with self.assertNumQueries(self.VIDEOS_LIST_NUM_QUERIES_AUTH):
+            response2 = self.client.get(reverse('api:v1:video-detail', kwargs={'id': 'videoid'}))
+
+        self.assertEqual(200, response1.status_code)
+        self.assertEqual(200, response2.status_code)
 
     def test_list_failed_videos(self):
         video = factories.VideoFactory(public_id="videoid", title='videotitle', owner=self.user)
