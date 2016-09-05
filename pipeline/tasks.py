@@ -1,4 +1,5 @@
 import logging
+from time import sleep
 
 from django.db.transaction import TransactionManagementError
 from django.contrib.auth.models import User
@@ -35,6 +36,10 @@ def release_lock(name):
     except TransactionManagementError:
         logger.error("Could not release lock %s", name)
 
+def wait_for_lock(name):
+    while cache.get(name) is not None:
+        sleep(0.1)
+
 def get_upload_url(user_id, filename, playlist_public_id=None):
     """
     Create an unused video upload url.
@@ -67,64 +72,76 @@ def get_upload_url(user_id, filename, playlist_public_id=None):
     return upload_url
 
 @shared_task(name='monitor_uploads')
-def monitor_uploads_task():
-    # This task should not run if there is already another one running
-    lock = 'MONITOR_UPLOADS_TASK_LOCK'
-    try:
-        acquire_lock(lock, 3600)
-    except exceptions.LockUnavailable:
-        return
-
-    try:
-        monitor_uploads()
-    finally:
-        release_lock(lock)
-
-def monitor_uploads(public_video_ids=None):
+def monitor_uploads():
     """
     Monitor upload urls to check whether there have been successful uploads.
 
+    This task is run periodically by celery to check the state of upload urls.
+    """
+    for upload_url in models.VideoUploadUrl.objects.should_check():
+        # We dispatch the responsibility of checking the urls to different
+        # celery tasks because we do not want to choke the main monitor_uploads
+        # task, which is not run concurrently. In other words, if there are
+        # many upload urls to be checked, the monitor_uploads task should not
+        # take a long time to complete. Otherwise, transcoding will take a long
+        # time to start.
+        send_task('monitor_upload', args=(upload_url.public_video_id,))
+
+@shared_task(name='monitor_upload')
+def monitor_upload(public_video_id, wait=False):
+    """
     Warning: this function should be thread-safe, since it can be called from an API view.
 
     Args:
-        public_video_ids: if defined, limit search to these videos
+        public_video_id (str)
+        wait (bool): if True, and if there is a concurrent call to this
+        function, it will block until completion of the concurrent task.
     """
-    # Check available upload urls
-    urls_queryset = models.VideoUploadUrl.objects.should_check()
-    if public_video_ids is not None:
-        urls_queryset = urls_queryset.filter(public_video_id__in=public_video_ids)
-    for upload_url in urls_queryset:
-        try:
-            # TODO this should really not be synchronous; otherwise, when we
-            # have many upload urls, it will take a very long time to detect
-            # upload urls to process.
-            backend.get().check_video(upload_url.public_video_id)
-            upload_url.was_used = True
-        except exceptions.VideoNotUploaded:
-            # Upload url was not used yet
-            continue
-        finally:
-            # Notes:
-            # - we also modify the last_checked attribute of unused urls
-            # - if the last_checked attribute exists, we make sure to set a proper value
-            upload_url.last_checked = now() if upload_url.last_checked is None else max(upload_url.last_checked, now())
-            upload_url.save()
+    # This task should not run if there is already another one running
+    lock = 'TASK_LOCK_MONITOR_UPLOAD:' + public_video_id
+    try:
+        acquire_lock(lock, 60)
+    except exceptions.LockUnavailable:
+        if wait:
+            wait_for_lock(lock)
+        return
 
-        # Create corresponding video
-        # Here, a get_or_create call is necessary to make sure that this
-        # function can run concurrently.
-        video, video_created = models.Video.objects.get_or_create(
-            public_id=upload_url.public_video_id,
-            owner=upload_url.owner
-        )
-        video.title = upload_url.filename
-        video.save()
-        if upload_url.playlist:
-            video.playlists.add(upload_url.playlist)
+    try:
+        _monitor_upload(public_video_id)
+    finally:
+        release_lock(lock)
 
-        # Start transcoding
-        if video_created:
-            send_task('transcode_video', args=(upload_url.public_video_id,))
+
+def _monitor_upload(public_video_id):
+    upload_url = models.VideoUploadUrl.objects.get(public_video_id=public_video_id)
+    try:
+        backend.get().check_video(upload_url.public_video_id)
+        upload_url.was_used = True
+    except exceptions.VideoNotUploaded:
+        # Upload url was not used yet
+        return
+    finally:
+        # Notes:
+        # - we also modify the last_checked attribute of unused urls
+        # - if the last_checked attribute exists, we make sure to set a proper value
+        upload_url.last_checked = now() if upload_url.last_checked is None else max(upload_url.last_checked, now())
+        upload_url.save()
+
+    # Create corresponding video
+    # Here, a get_or_create call is necessary to make sure that this
+    # function can run concurrently.
+    video, video_created = models.Video.objects.get_or_create(
+        public_id=upload_url.public_video_id,
+        owner=upload_url.owner
+    )
+    video.title = upload_url.filename
+    video.save()
+    if upload_url.playlist:
+        video.playlists.add(upload_url.playlist)
+
+    # Start transcoding
+    if video_created:
+        send_task('transcode_video', args=(upload_url.public_video_id,))
 
 @shared_task(name='transcode_video')
 def transcode_video(public_video_id):

@@ -115,7 +115,7 @@ class VideoViewSet(mixins.RetrieveModelMixin,
 
             # Check if the video was not just uploaded and try again
             video_public_id = self.kwargs[self.lookup_url_kwarg or self.lookup_field]
-            tasks.monitor_uploads([video_public_id])
+            tasks.monitor_upload(video_public_id, wait=True)
             return super(VideoViewSet, self).get_object()
 
     def perform_destroy(self, instance):

@@ -82,11 +82,16 @@ class TasksTests(TestCase):
         self.assertEqual(url2.owner, models.Video.objects.get().owner)
         mock_backend.return_value.start_transcoding.assert_called_once_with('videoid2')
 
-    def test_monitor_uploads_task(self):
-        tasks.monitor_uploads_task()
+    def test_monitor_upload_synchronously(self):
+        factories.VideoUploadUrlFactory(public_video_id='videoid', expires_at=time() + 3600)
 
-        # Check lock is available
-        tasks.acquire_lock('MONITOR_UPLOADS_TASK_LOCK')
+        mock_backend = Mock(return_value=Mock(
+            check_video=Mock(side_effect=exceptions.VideoNotUploaded),
+        ))
+        with override_settings(PLUGIN_BACKEND=mock_backend):
+            tasks.monitor_upload('videoid', wait=True)
+
+        mock_backend.return_value.check_video.assert_called_once_with('videoid')
 
 
     def test_monitor_uploads_with_one_expired_url(self):
