@@ -21,6 +21,7 @@ class UsersTests(BaseAuthenticatedTests):
         self.assertNotIn('password', response_data)
         self.assertEqual(self.user.username, response_data['username'])
         self.assertIsNotNone(response_data['token'])
+        self.assertTrue(response_data['is_staff'])
 
     def test_list_users(self):
         url = reverse('api:v1:user-list')

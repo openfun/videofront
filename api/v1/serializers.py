@@ -35,9 +35,10 @@ class SubtitleSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, default=utils.random_password)
     token = serializers.CharField(read_only=True, source='auth_token.key')
+    is_staff = serializers.BooleanField(read_only=True)
 
     class Meta:
-        fields = ('username', 'password', 'token',)
+        fields = ('username', 'password', 'token', 'is_staff',)
         model = User
 
     def create(self, validated_data):
