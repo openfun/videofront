@@ -183,14 +183,19 @@ def transcode_video_restart():
     with Lock('TASK_LOCK_TRANSCODE_VIDEO_RESTART', 60) as lock:
         if lock.is_acquired:
             for processing_state in models.ProcessingState.objects.filter(status=models.ProcessingState.STATUS_RESTART):
-                send_task('transcode_video', args=(processing_state.video.public_id,))
+                send_task('transcode_video', args=(processing_state.video.public_id,), kwargs={'delete': False})
 
 @shared_task(name='transcode_video')
-def transcode_video(public_video_id):
+def transcode_video(public_video_id, delete=True):
+    """
+    Args:
+        public_video_id (str)
+        delete (bool): delete video on failure
+    """
     with Lock('TASK_LOCK_TRANSCODE_VIDEO:' + public_video_id, 3600) as lock:
         if lock.is_acquired:
             try:
-                _transcode_video(public_video_id)
+                _transcode_video(public_video_id, delete=delete)
             except Exception as e:
                 # Store error message
                 message = "\n".join(e.args)
@@ -202,7 +207,7 @@ def transcode_video(public_video_id):
                 )
                 raise
 
-def _transcode_video(public_video_id):
+def _transcode_video(public_video_id, delete=True):
     """
     This function is not thread-safe. It should only be called by the transcode_video task.
     """
@@ -236,10 +241,11 @@ def _transcode_video(public_video_id):
     video.processing_state.message = "\n".join(errors)
     models.VideoFormat.objects.filter(video=video).delete()
     if errors:
-        # In case of errors, wipe all data
         video.processing_state.status = models.ProcessingState.STATUS_FAILED
         video.processing_state.save()
-        delete_video(public_video_id)
+        if delete:
+            # In case of errors, wipe all data
+            delete_video(public_video_id)
     else:
         # Create video formats first so that they are available as soon as the
         # video object becomes available from the API

@@ -283,6 +283,23 @@ class TasksTests(TestCase):
             models.ProcessingState.objects.get(video=video).status
         )
 
+    def test_transcode_video_restart_fails(self):
+        video = factories.VideoFactory(public_id='videoid')
+        models.ProcessingState.objects.filter(video=video).update(status=models.ProcessingState.STATUS_RESTART)
+
+        mock_backend = Mock(return_value=Mock(
+            start_transcoding=Mock(return_value=[1]),
+            check_progress=Mock(side_effect=exceptions.TranscodingFailed),
+        ))
+        with override_settings(PLUGIN_BACKEND=mock_backend):
+            tasks.transcode_video_restart()
+
+        self.assertEqual(
+            models.ProcessingState.STATUS_FAILED,
+            models.ProcessingState.objects.get(video=video).status
+        )
+        mock_backend.return_value.delete_video.assert_not_called()
+
 
 class SubtitleTasksTest(TestCase):
 
