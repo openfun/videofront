@@ -22,6 +22,15 @@ class UsersTests(BaseAuthenticatedTests):
         self.assertEqual(self.user.username, response_data['username'])
         self.assertIsNotNone(response_data['token'])
 
+    def test_list_users(self):
+        url = reverse('api:v1:user-list')
+        response = self.client.get(url)
+
+        self.assertEqual(200, response.status_code)
+        response_data = response.json()
+
+        self.assertEqual(1, len(response_data))
+
     def test_create_user_with_password(self):
         url = reverse('api:v1:user-list')
         response = self.client.post(url, {

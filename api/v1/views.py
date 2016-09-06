@@ -85,9 +85,11 @@ class SubtitleViewSet(mixins.RetrieveModelMixin,
 
 class UserViewSet(mixins.RetrieveModelMixin,
                   mixins.CreateModelMixin,
+                  mixins.ListModelMixin,
                   viewsets.GenericViewSet):
     """
-    User creation. Note that this viewset is only accessible to admin (staff) users.
+    User creation, listing and details. Note that this viewset is only
+    accessible to admin (staff) users.
     """
 
     authentication_classes = AUTHENTICATION_CLASSES
