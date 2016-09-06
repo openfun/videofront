@@ -1,6 +1,8 @@
+from django.contrib.auth.models import User
 from rest_framework import serializers
 
 from pipeline import models
+from . import utils
 
 
 class PlaylistSerializer(serializers.ModelSerializer):
@@ -28,6 +30,21 @@ class SubtitleSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('id', 'language', 'video_id', 'url')
         model = models.Subtitle
+
+
+class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, default=utils.random_password)
+    token = serializers.CharField(read_only=True, source='auth_token.key')
+
+    class Meta:
+        fields = ('username', 'password', 'token',)
+        model = User
+
+    def create(self, validated_data):
+        return User.objects.create_user(
+            validated_data['username'],
+            password=validated_data['password']
+        )
 
 
 class VideoFormatSerializer(serializers.ModelSerializer):

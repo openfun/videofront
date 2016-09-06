@@ -1,6 +1,7 @@
 from time import sleep
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.db import transaction
 from django.http import Http404
 import django_filters
@@ -11,7 +12,7 @@ from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
 from rest_framework.decorators import detail_route
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 
 from pipeline import cache
@@ -53,6 +54,53 @@ class PlaylistViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return models.Playlist.objects.filter(owner=self.request.user)
+
+
+class SubtitleViewSet(mixins.RetrieveModelMixin,
+                      mixins.DestroyModelMixin,
+                      viewsets.GenericViewSet):
+    authentication_classes = AUTHENTICATION_CLASSES
+    permission_classes = PERMISSION_CLASSES
+
+    serializer_class = serializers.SubtitleSerializer
+
+    lookup_field = 'public_id'
+    lookup_url_kwarg = 'id'
+
+
+    def get_queryset(self):
+        queryset = models.Subtitle.objects.select_related(
+            'video'
+        ).exclude(
+            video__processing_state__status=models.ProcessingState.STATUS_FAILED
+        ).filter(
+           video__owner=self.request.user
+        )
+        return queryset
+
+    def perform_destroy(self, instance):
+        super(SubtitleViewSet, self).perform_destroy(instance)
+        tasks.delete_subtitle(instance.video.public_id, instance.public_id)
+
+
+class UserViewSet(mixins.RetrieveModelMixin,
+                  mixins.CreateModelMixin,
+                  viewsets.GenericViewSet):
+    """
+    User creation. Note that this viewset is only accessible to admin (staff) users.
+    """
+
+    authentication_classes = AUTHENTICATION_CLASSES
+    permission_classes = (IsAuthenticated, IsAdminUser)
+
+    queryset = User.objects.all().order_by('-date_joined').select_related('auth_token')
+    serializer_class = serializers.UserSerializer
+
+    lookup_field = 'username'
+    lookup_url_kwarg = 'username'
+
+    class Meta:
+        model = User
 
 
 class VideoFilter(filters.FilterSet):
@@ -198,30 +246,3 @@ class VideoUploadViewSet(viewsets.ViewSet):
 
         url_info = tasks.get_upload_url(request.user.id, filename, playlist_public_id=playlist_public_id)
         return Response(url_info)
-
-
-class SubtitleViewSet(mixins.RetrieveModelMixin,
-                      mixins.DestroyModelMixin,
-                      viewsets.GenericViewSet):
-    authentication_classes = AUTHENTICATION_CLASSES
-    permission_classes = PERMISSION_CLASSES
-
-    serializer_class = serializers.SubtitleSerializer
-
-    lookup_field = 'public_id'
-    lookup_url_kwarg = 'id'
-
-
-    def get_queryset(self):
-        queryset = models.Subtitle.objects.select_related(
-            'video'
-        ).exclude(
-            video__processing_state__status=models.ProcessingState.STATUS_FAILED
-        ).filter(
-           video__owner=self.request.user
-        )
-        return queryset
-
-    def perform_destroy(self, instance):
-        super(SubtitleViewSet, self).perform_destroy(instance)
-        tasks.delete_subtitle(instance.video.public_id, instance.public_id)
