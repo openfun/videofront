@@ -8,7 +8,7 @@ import django_filters
 from rest_framework.exceptions import ValidationError
 from rest_framework import filters
 from rest_framework import mixins
-from rest_framework import status
+from rest_framework import status as rest_status
 from rest_framework import viewsets
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
 from rest_framework.decorators import detail_route
@@ -54,6 +54,66 @@ class PlaylistViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return models.Playlist.objects.filter(owner=self.request.user)
+
+
+    @detail_route(methods=['POST'])
+    def add_video(self, request, **kwargs):
+        """
+        Add a video to a playlist
+
+        Note that a user may only manage playlist videos for videos and playlists he owns.
+        """
+        try:
+            playlist, video = self._get_playlist_video(request, **kwargs)
+        except ErrorResponse as e:
+            return e.response
+        playlist.videos.add(video)
+        return Response({}, status=rest_status.HTTP_204_NO_CONTENT)
+
+    @detail_route(methods=['POST'])
+    def remove_video(self, request, **kwargs):
+        """
+        Remove a video from a playlist
+
+        Note that a user may only manage playlist videos for videos and playlists he owns.
+        """
+        try:
+            playlist, video = self._get_playlist_video(request, **kwargs)
+        except ErrorResponse as e:
+            return e.response
+        playlist.videos.remove(video)
+        return Response({}, status=rest_status.HTTP_204_NO_CONTENT)
+
+    def _get_playlist_video(self, request, **kwargs):
+        """
+        Get the playlist and video objects associated to a call to add_video or remove_video
+
+        Returns:
+            playlist (models.Playlist)
+            video (models.Video)
+
+        Raise:
+            ErrorResponse
+        """
+        playlist = self.get_object()
+        serializer = serializers.SubtitleSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        public_video_id = request.data.get("id")
+
+        if not public_video_id:
+            raise ErrorResponse({'id': "Missing argument"}, status=rest_status.HTTP_400_BAD_REQUEST)
+
+        try:
+            video = models.Video.objects.filter(
+                owner=request.user
+            ).exclude(
+                processing_state__status=models.ProcessingState.STATUS_FAILED
+            ).get(public_id=public_video_id)
+        except models.Video.DoesNotExist:
+            raise ErrorResponse({'id': "Video does not exist"}, status=rest_status.HTTP_404_NOT_FOUND)
+
+        return playlist, video
 
 
 class SubtitleViewSet(mixins.RetrieveModelMixin,
@@ -200,7 +260,7 @@ class VideoViewSet(mixins.RetrieveModelMixin,
         attachment = request.FILES.get("file")
 
         if not attachment:
-            return Response({'file': "Missing file"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'file': "Missing file"}, status=rest_status.HTTP_400_BAD_REQUEST)
         if attachment.size > settings.SUBTITLES_MAX_BYTES:
             return Response(
                 {
@@ -208,7 +268,7 @@ class VideoViewSet(mixins.RetrieveModelMixin,
                         settings.SUBTITLES_MAX_BYTES
                     )
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=rest_status.HTTP_400_BAD_REQUEST
             )
 
         try:
@@ -218,9 +278,9 @@ class VideoViewSet(mixins.RetrieveModelMixin,
                 subtitle = serializer.save(video_id=video.id)
                 tasks.upload_subtitle(video.public_id, subtitle.public_id, subtitle.language, attachment.read())
         except exceptions.SubtitleInvalid as e:
-            return Response({'file': e.args[0]}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'file': e.args[0]}, status=rest_status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=rest_status.HTTP_201_CREATED)
 
 
 class VideoUploadViewSet(viewsets.ViewSet):
@@ -244,7 +304,18 @@ class VideoUploadViewSet(viewsets.ViewSet):
             try:
                 models.Playlist.objects.get(owner=request.user, public_id=playlist_public_id)
             except models.Playlist.DoesNotExist:
-                return Response({'playlist_id': "Does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'playlist_id': "Does not exist"}, status=rest_status.HTTP_400_BAD_REQUEST)
 
         url_info = tasks.get_upload_url(request.user.id, filename, playlist_public_id=playlist_public_id)
         return Response(url_info)
+
+
+class ErrorResponse(Exception):
+    def __init__(self, response_data, status=None):
+        super(ErrorResponse, self).__init__(response_data, status)
+        self.response_data = response_data
+        self.status = status
+
+    @property
+    def response(self):
+        return Response(self.response_data, status=self.status)

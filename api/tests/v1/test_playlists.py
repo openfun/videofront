@@ -29,3 +29,49 @@ class PlaylistTests(BaseAuthenticatedTests):
 
         self.assertEqual(1, len(playlists_funk))
         self.assertEqual('funkid', playlists_funk[0]['id'])
+
+    def test_insert_video_in_playlist(self):
+        playlist = factories.PlaylistFactory(name="Funkadelic playlist", owner=self.user)
+        factories.VideoFactory(public_id="videoid", owner=self.user)
+
+        response = self.client.post(
+            reverse("api:v1:playlist-add-video", kwargs={'id': playlist.public_id}),
+            data={"id": 'videoid'}
+        )
+
+        self.assertEqual(204, response.status_code)
+        self.assertEqual(1, playlist.videos.count())
+
+    def test_insert_non_existing_video_in_playlist(self):
+        playlist = factories.PlaylistFactory(name="Funkadelic playlist", owner=self.user)
+
+        response = self.client.post(
+            reverse("api:v1:playlist-add-video", kwargs={'id': playlist.public_id}),
+            data={"id": 'videoid'}
+        )
+
+        self.assertEqual(404, response.status_code)
+
+    def test_insert_video_from_different_user_in_playlist(self):
+        playlist = factories.PlaylistFactory(name="Funkadelic playlist", owner=self.user)
+        different_user = factories.UserFactory()
+        factories.VideoFactory(public_id="videoid", owner=different_user)
+
+        response = self.client.post(
+            reverse("api:v1:playlist-add-video", kwargs={'id': playlist.public_id}),
+            data={"id": 'videoid'}
+        )
+
+        self.assertEqual(404, response.status_code)
+
+    def test_remove_video_from_playlist(self):
+        playlist = factories.PlaylistFactory(name="Funkadelic playlist", owner=self.user)
+        video = factories.VideoFactory(public_id="videoid", owner=self.user)
+        playlist.videos.add(video)
+
+        response = self.client.post(
+            reverse("api:v1:playlist-remove-video", kwargs={'id': playlist.public_id}),
+            data={"id": 'videoid'}
+        )
+
+        self.assertEqual(204, response.status_code)
