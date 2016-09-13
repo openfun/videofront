@@ -14,3 +14,9 @@ class VideoUploadUrlManager(models.Manager):
         Filter out unavailable objects.
         """
         return self.filter(expires_at__gt=time() - self.EXPIRE_DELAY, was_used=False)
+
+    def obsolete(self):
+        """
+        Unused upload urls that have expired.
+        """
+        return self.filter(expires_at__lt=time() - 2*self.EXPIRE_DELAY, was_used=False)

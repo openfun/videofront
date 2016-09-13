@@ -9,6 +9,7 @@ from pipeline import exceptions
 from pipeline import models
 from pipeline import tasks
 from pipeline.tests import factories
+from videofront.celery_videofront import send_task
 
 
 class LockTests(TransactionTestCase):
@@ -241,3 +242,29 @@ Also I have utf8 characters: é û ë ï 你好.
                 exceptions.SubtitleInvalid,
                 tasks.upload_subtitle, 'videoid', 'subtitleid', 'fr', b'Some invalid content'
             )
+
+class UploadUrlsTasksTests(TestCase):
+
+    def test_clean_upload_urls(self):
+        factories.VideoUploadUrlFactory(
+            public_video_id='available',
+            expires_at=time(),
+            was_used=False
+        )
+        factories.VideoUploadUrlFactory(
+            public_video_id='expired',
+            expires_at=time() - 7200,
+            was_used=False
+        )
+        factories.VideoUploadUrlFactory(
+            public_video_id='expired_used',
+            expires_at=time() - 7200,
+            was_used=True
+        )
+        send_task('clean_upload_urls')
+
+        upload_url_ids = [url.public_video_id for url in models.VideoUploadUrl.objects.all()]
+
+        self.assertIn('available', upload_url_ids)
+        self.assertIn('expired_used', upload_url_ids)
+        self.assertEqual(2, len(upload_url_ids))

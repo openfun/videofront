@@ -216,3 +216,10 @@ def delete_video(public_video_id):
 def delete_subtitle(public_video_id, public_subtitle_id):
     """ Delete subtitle associated to video"""
     backend.get().delete_subtitle(public_video_id, public_subtitle_id)
+
+@shared_task(name='clean_upload_urls')
+def clean_upload_urls():
+    """
+    Remove video upload urls which cannot be used anymore.
+    """
+    models.VideoUploadUrl.objects.obsolete().delete()

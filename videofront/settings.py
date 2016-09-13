@@ -191,6 +191,10 @@ CELERY_ALWAYS_EAGER = True
 CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
 CELERYBEAT_SCHEDULE = {
+    'clean_upload_urls': {
+        'task': 'clean_upload_urls',
+        'schedule': timedelta(hours=1),
+    },
     'transcode_video_restart': {
         'task': 'transcode_video_restart',
         'schedule': timedelta(seconds=5),
