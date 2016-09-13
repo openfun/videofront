@@ -191,11 +191,6 @@ CELERY_ALWAYS_EAGER = True
 CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
 CELERYBEAT_SCHEDULE = {
-    # TODO remove me
-    'monitor_uploads': {
-        'task': 'monitor_uploads',
-        'schedule': timedelta(seconds=5),
-    },
     'transcode_video_restart': {
         'task': 'transcode_video_restart',
         'schedule': timedelta(seconds=5),

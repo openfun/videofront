@@ -1,11 +1,9 @@
-from time import time
-
 from botocore.exceptions import ClientError
 import boto3
 from django.conf import settings
 
 import pipeline.backend
-from pipeline.exceptions import VideoNotUploaded, TranscodingFailed
+from pipeline.exceptions import TranscodingFailed
 import pipeline.utils
 
 
@@ -102,41 +100,6 @@ class Backend(pipeline.backend.BaseBackend):
             Bucket=settings.S3_BUCKET,
             Key=self.get_video_folder_key(public_video_id) + 'src/' + file_object.name,
         )
-
-    def get_upload_url(self, filename):
-        # TODO remove this
-        """
-        Generate video upload urls for storage on Amazon S3
-        """
-        bucket = settings.S3_BUCKET
-        video_id = pipeline.utils.generate_random_id()
-        expires_at = time() + 3600
-        url = self.s3_client.generate_presigned_url(
-            'put_object',
-            Params={
-                'Bucket': bucket,
-                'Key': self.get_video_folder_key(video_id) + 'src/' + filename,
-                'ContentType': 'application/octet-stream',
-            },
-            ExpiresIn=expires_at - time()
-        )
-
-        return {
-            'url': url,
-            'method': 'PUT',
-            'id': video_id,
-            'expires_at': expires_at
-        }
-
-    def check_video(self, public_video_id):
-        # TODO remove this
-        # List content of 'src' folder
-        key = self.get_src_file_key(public_video_id)
-        if key is None:
-            # Note that it is a perfectly viable scenario when an upload
-            # url is generated and it not used; also, when a user
-            # connection drops during upload.
-            raise VideoNotUploaded
 
     def start_transcoding(self, public_video_id):
         pipeline_id = settings.ELASTIC_TRANSCODER_PIPELINE_ID

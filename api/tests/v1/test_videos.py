@@ -130,7 +130,6 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual(405, response.status_code) # method not allowed
 
     @override_plugin_backend(
-        check_video=lambda video_id: None,
         start_transcoding=lambda video_id: [],
         iter_formats=lambda video_id: [],
     )

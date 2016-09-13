@@ -2,7 +2,6 @@ import logging
 from time import sleep
 
 from django.db.transaction import TransactionManagementError
-from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.utils.timezone import now
 from celery import shared_task
@@ -109,107 +108,6 @@ def upload_video(public_video_id, file_object):
 
     # Start transcoding
     send_task('transcode_video', args=(public_video_id,))
-
-
-def get_upload_url(user_id, filename, playlist_public_id=None):
-    """
-    Create an unused video upload url.
-
-    Returns: {
-        'url' (str): url on which the video file can be sent
-        'method': 'GET', 'POST' or 'PUT'
-        'expires_at': timestamp at which the url will expire
-        'id': public video id
-    }
-    """
-    # TODO remove this
-    user = User.objects.get(id=user_id)
-    upload_url = backend.get().get_upload_url(filename)
-
-    public_video_id = upload_url["id"]
-    expires_at = upload_url['expires_at']
-
-    playlist = None
-    if playlist_public_id is not None:
-        playlist = models.Playlist.objects.get(public_id=playlist_public_id)
-
-    models.VideoUploadUrl.objects.create(
-        public_video_id=public_video_id,
-        expires_at=expires_at,
-        filename=filename,
-        owner=user,
-        playlist=playlist,
-    )
-
-    return upload_url
-
-@shared_task(name='monitor_uploads')
-def monitor_uploads():
-    """
-    Monitor upload urls to check whether there have been successful uploads.
-
-    This task is run periodically by celery to check the state of upload urls.
-    """
-    # TODO remove this
-    for upload_url in models.VideoUploadUrl.objects.should_check():
-        # We dispatch the responsibility of checking the urls to different
-        # celery tasks because we do not want to choke the main monitor_uploads
-        # task, which is not run concurrently. In other words, if there are
-        # many upload urls to be checked, the monitor_uploads task should not
-        # take a long time to complete. Otherwise, transcoding will take a long
-        # time to start.
-        send_task('monitor_upload', args=(upload_url.public_video_id,))
-
-@shared_task(name='monitor_upload')
-def monitor_upload(public_video_id, wait=False):
-    """
-    Warning: this function should be thread-safe, since it can be called from an API view.
-
-    Args:
-        public_video_id (str)
-        wait (bool): if True, and if there is a concurrent call to this
-        function, it will block until completion of the concurrent task.
-    """
-    # TODO remove this
-    # This task should not run if there is already another one running
-    with Lock('TASK_LOCK_MONITOR_UPLOAD:' + public_video_id, 60, wait=wait) as lock:
-        if lock.is_acquired:
-            _monitor_upload(public_video_id)
-        elif wait:
-            lock.wait_until_available()
-
-
-def _monitor_upload(public_video_id):
-    # TODO remove this
-    upload_url = models.VideoUploadUrl.objects.get(public_video_id=public_video_id)
-    try:
-        backend.get().check_video(upload_url.public_video_id)
-        upload_url.was_used = True
-    except exceptions.VideoNotUploaded:
-        # Upload url was not used yet
-        return
-    finally:
-        # Notes:
-        # - we also modify the last_checked attribute of unused urls
-        # - if the last_checked attribute exists, we make sure to set a proper value
-        upload_url.last_checked = now() if upload_url.last_checked is None else max(upload_url.last_checked, now())
-        upload_url.save()
-
-    # Create corresponding video
-    # Here, a get_or_create call is necessary to make sure that this
-    # function can run concurrently.
-    video, video_created = models.Video.objects.get_or_create(
-        public_id=upload_url.public_video_id,
-        owner=upload_url.owner
-    )
-    video.title = upload_url.filename
-    video.save()
-    if upload_url.playlist:
-        video.playlists.add(upload_url.playlist)
-
-    # Start transcoding
-    if video_created:
-        send_task('transcode_video', args=(upload_url.public_video_id,))
 
 @shared_task(name='transcode_video_restart')
 def transcode_video_restart():

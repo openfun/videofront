@@ -72,11 +72,6 @@ class VideoUploadUrl(models.Model):
         blank=False, null=True,
         default=utils.generate_random_id,
     )
-    # TODO remove me
-    filename = models.CharField(
-        verbose_name="Uploaded file name",
-        max_length=128,
-    )
     expires_at = models.IntegerField(
         verbose_name="Timestamp at which the url expires",
         db_index=True
@@ -85,12 +80,6 @@ class VideoUploadUrl(models.Model):
         verbose_name="Was the upload url used?",
         default=False,
         db_index=True
-    )
-    # TODO remove me
-    last_checked = models.DateTimeField(
-        verbose_name="Last time it was checked if the url was used",
-        blank=True, null=True,
-        db_index=True,
     )
     owner = models.ForeignKey(User, related_name='video_upload_urls')
     playlist = models.ForeignKey(

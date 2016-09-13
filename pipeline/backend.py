@@ -14,38 +14,6 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
-    def get_upload_url(self, filename):
-        # TODO remove this
-        """
-        Return an upload url for uploading video files.
-
-        Args:
-            filename (str): name of the file that will be uploaded
-
-        Returns:
-            {
-                'url' (str): url on which the video file can be sent
-                'method': 'GET', 'POST' or 'PUT'
-                'expires_at': timestamp at which the url will expire
-                'id': public video id
-            }
-        """
-        raise NotImplementedError
-
-    def check_video(self, video_id):
-        # TODO remove this
-        """
-        Check if the video file for which an upload url was generated has been uploaded.
-
-        This function is only used to check whether an upload url has been used or not.
-
-        If the upload url has not been used yet, this function should raise a
-        VideoNotUploaded exception.
-
-        The return value is not used.
-        """
-        raise NotImplementedError
-
     def start_transcoding(self, video_id):
         """
         Create and start transcoding jobs.

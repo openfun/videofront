@@ -21,7 +21,7 @@ class VideoAdmin(admin.ModelAdmin):
 
 class VideoUploadUrlAdmin(admin.ModelAdmin):
     model = models.VideoUploadUrl
-    list_display = ('public_video_id', 'owner', 'expires_at', 'was_used', 'last_checked',)
+    list_display = ('public_video_id', 'owner', 'expires_at', 'was_used',)
 
 
 class PlaylistAdmin(admin.ModelAdmin):

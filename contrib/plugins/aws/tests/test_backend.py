@@ -8,61 +8,12 @@ from contrib.plugins.aws import backend as aws_backend
 import pipeline.backend
 import pipeline.exceptions
 import pipeline.tasks
-from pipeline.tests.factories import UserFactory, VideoFactory
+from pipeline.tests.factories import VideoFactory
 from . import utils
 
 
 @utils.override_s3_settings
 class VideoUploadUrlTests(TestCase):
-
-    @patch('contrib.plugins.aws.backend.time')
-    @patch('pipeline.utils.generate_random_id')
-    def test_get_upload_url(self, mock_generate_random_id, mock_time):
-        mock_time.return_value = 0
-        backend = aws_backend.Backend()
-        mock_generate_random_id.return_value = 'someid'
-        backend._s3_client = Mock(
-            generate_presigned_url=Mock(return_value="http://someurl")
-        )
-
-        upload_url = backend.get_upload_url('filename')
-
-        self.assertEqual({
-            'method': 'PUT',
-            'url': "http://someurl",
-            'expires_at': 3600,
-            'id': 'someid'
-        }, upload_url)
-
-    @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')
-    @patch('contrib.plugins.aws.backend.Backend.s3_client', Mock(
-        generate_presigned_url=Mock(return_value="http://someurl")
-    ))
-    def test_get_upload_url_compatibility(self):
-        user = UserFactory()
-        upload_url = pipeline.tasks.get_upload_url(user.id, 'filename')
-        self.assertEqual('http://someurl', upload_url['url'])
-
-    def test_get_successfuly_uploaded_video(self):
-        backend = aws_backend.Backend()
-        backend._s3_client = Mock(list_objects=Mock(return_value={
-            "Contents": [
-                {'Key': 'videos/key/src/My file.mp4'}
-            ]
-        }))
-
-        backend.check_video('key')
-        backend.s3_client.list_objects.assert_called_once_with(
-            Bucket='dummys3storagebucket', Prefix='videos/key/src/'
-        )
-
-    def test_get_uploaded_video_for_not_uploaded_video(self):
-        backend = aws_backend.Backend()
-        backend._s3_client = Mock(list_objects=Mock(return_value={
-            "Contents": []
-        }))
-
-        self.assertRaises(pipeline.exceptions.VideoNotUploaded, backend.check_video, 'key')
 
     def test_upload_video(self):
         backend = aws_backend.Backend()

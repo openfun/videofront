@@ -12,8 +12,6 @@ router.register(r'subtitles', views.SubtitleViewSet, base_name='subtitle')
 router.register(r'users', views.UserViewSet)
 router.register(r'videos', views.VideoViewSet, base_name='video')
 router.register(r'videos', views.UploadViewset, base_name='video')
-
-router.register(r'videouploads', views.VideoUploadViewSet, base_name='videoupload')# TODO remove me
 router.register(r'videouploadurls', views.VideoUploadUrlViewSet, base_name='videouploadurl')
 
 urlpatterns = [

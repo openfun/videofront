@@ -26,6 +26,6 @@ def override_plugin_backend(**kwargs):
     """
     Override a selection of methods of the plugin backend, for test purposes.
 
-    Example: @override_plugin_backend(get_upload_url=lambda x: 42)
+    Example: @override_plugin_backend(upload_video=lambda x: 42)
     """
     return override_settings(PLUGIN_BACKEND=TestPluginBackendFactory(**kwargs))

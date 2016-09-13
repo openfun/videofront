@@ -1,11 +1,9 @@
-from datetime import timedelta
 from time import time
 from mock import Mock
 
 from django.db.utils import IntegrityError
 from django.test import TestCase, TransactionTestCase
 from django.test.utils import override_settings
-from django.utils.timezone import now
 
 from pipeline import exceptions
 from pipeline import models
@@ -84,125 +82,6 @@ class TasksTests(TestCase):
         video_upload_url = models.VideoUploadUrl.objects.get()
         self.assertEqual("Some video.mp4", video.title)
         self.assertTrue(video_upload_url.was_used)
-
-    def test_monitor_uploads(self):
-        def check_video(video_id):
-            if video_id == "videoid1":
-                raise exceptions.VideoNotUploaded
-        mock_backend = Mock(return_value=Mock(
-            start_transcoding=Mock(return_value=[]),# Don't start any transcoding
-            check_video=check_video,
-            iter_formats=Mock(return_value=[]),
-        ))
-
-        factories.VideoUploadUrlFactory(
-            public_video_id='videoid1',
-            filename="video1.mp4",
-            expires_at=time() + 3600
-        )
-        factories.VideoUploadUrlFactory(
-            public_video_id='videoid2',
-            filename="video2.mp4",
-            expires_at=time() + 3600
-        )
-
-        with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.monitor_uploads()
-
-        url1 = models.VideoUploadUrl.objects.get(public_video_id='videoid1')
-        url2 = models.VideoUploadUrl.objects.get(public_video_id='videoid2')
-
-        self.assertFalse(url1.was_used)
-        self.assertTrue(url2.was_used)
-        self.assertIsNotNone(url1.last_checked)
-        self.assertIsNotNone(url2.last_checked)
-        self.assertEqual(1, models.Video.objects.count())
-        self.assertEqual('video2.mp4', models.Video.objects.get().title)
-        self.assertEqual(url2.owner, models.Video.objects.get().owner)
-        mock_backend.return_value.start_transcoding.assert_called_once_with('videoid2')
-
-    def test_monitor_upload_synchronously(self):
-        factories.VideoUploadUrlFactory(public_video_id='videoid', expires_at=time() + 3600)
-
-        mock_backend = Mock(return_value=Mock(
-            check_video=Mock(side_effect=exceptions.VideoNotUploaded),
-        ))
-        with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.monitor_upload('videoid', wait=True)
-
-        mock_backend.return_value.check_video.assert_called_once_with('videoid')
-
-
-    def test_monitor_uploads_with_one_expired_url(self):
-        factories.VideoUploadUrlFactory(
-            public_video_id='videoid', expires_at=time() - 7200,
-            was_used=False, last_checked=None
-        )
-        mock_backend = Mock(return_value=Mock(
-            start_transcoding=Mock(return_value=[]),
-            iter_formats=Mock(return_value=[]),
-        ))
-        with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.monitor_uploads()
-
-        # We want upload urls to be checked at least once even after they expired.
-        self.assertTrue(models.VideoUploadUrl.objects.get(public_video_id='videoid').was_used)
-        mock_backend.return_value.start_transcoding.assert_called_once_with('videoid')
-
-    def test_monitor_uploads_for_already_created_video(self):
-        upload_url = factories.VideoUploadUrlFactory(
-            public_video_id='videoid',
-            expires_at=time() + 3600,
-            was_used=False,
-            last_checked=None
-        )
-        factories.VideoFactory(public_id='videoid', owner=upload_url.owner)
-
-        # Simulate a monitoring task that runs while the video has alreay been created
-        mock_backend = Mock(return_value=Mock(
-            transcode_video=Mock(return_value=[100])
-        ))
-        with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.monitor_uploads()
-
-        mock_backend.return_value.transcode_video.assert_not_called()
-
-    def test_monitor_upload_of_url_with_last_checked_in_future(self):
-        last_checked = now() + timedelta(seconds=100)
-        factories.VideoUploadUrlFactory(
-            public_video_id='videoid',
-            expires_at=time() + 3600,
-            was_used=False,
-            last_checked=last_checked,
-        )
-
-        mock_backend = Mock(return_value=Mock(
-            check_video=Mock(side_effect=exceptions.VideoNotUploaded)
-        ))
-        with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.monitor_uploads()
-
-        self.assertEqual(last_checked, models.VideoUploadUrl.objects.get().last_checked)
-
-    def test_monitor_upload_of_url_with_playlist(self):
-        playlist = factories.PlaylistFactory()
-        factories.VideoUploadUrlFactory(
-            public_video_id='videoid',
-            expires_at=time() + 3600,
-            was_used=False,
-            playlist=playlist
-        )
-
-        mock_backend = Mock(return_value=Mock(
-            start_transcoding=Mock(return_value=[]),
-            iter_formats=Mock(return_value=[]),
-        ))
-        with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.monitor_uploads()
-
-        video = models.Video.objects.get()
-        self.assertEqual(1, video.playlists.count())
-        self.assertEqual(playlist.id, video.playlists.get().id)
 
     def test_transcode_video_success(self):
         factories.VideoFactory(public_id='videoid')

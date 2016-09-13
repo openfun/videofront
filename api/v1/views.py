@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.http import Http404
 import django_filters
-from rest_framework.exceptions import ValidationError
 from rest_framework import filters
 from rest_framework import mixins
 from rest_framework import status as rest_status
@@ -326,36 +325,6 @@ class UploadViewset(viewsets.ViewSet):
             return Response({'file': "Missing argument"}, status=rest_status.HTTP_400_BAD_REQUEST, headers=cors_headers)
         tasks.upload_video(video_upload_url.public_video_id, video_file)
         return Response({'id': video_upload_url.public_video_id}, headers=cors_headers)
-
-
-class VideoUploadViewSet(viewsets.ViewSet):
-    """
-    Generate video upload urls.
-
-    TODO this the old-style video upload view. It should be replaced by the
-    VideoUploadUrlViewset in videofront clients.
-    """
-    authentication_classes = AUTHENTICATION_CLASSES
-    permission_classes = PERMISSION_CLASSES
-
-    def create(self, request):
-        filename = request.data.get('filename')
-        if not filename:
-            raise ValidationError("Missing filename parameter")
-        if len(filename) > 128:
-            raise ValidationError("Invalid filename parameter (> 128 characters)")
-
-        # Validate playlist id. Note that this could be in a serializer, but I
-        # have not found a proper way to do it.
-        playlist_public_id = request.data.get('playlist_id')
-        if playlist_public_id is not None:
-            try:
-                models.Playlist.objects.get(owner=request.user, public_id=playlist_public_id)
-            except models.Playlist.DoesNotExist:
-                return Response({'playlist_id': "Does not exist"}, status=rest_status.HTTP_400_BAD_REQUEST)
-
-        url_info = tasks.get_upload_url(request.user.id, filename, playlist_public_id=playlist_public_id)
-        return Response(url_info)
 
 
 class ErrorResponse(Exception):
