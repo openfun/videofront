@@ -10,9 +10,11 @@ from rest_framework import mixins
 from rest_framework import status as rest_status
 from rest_framework import viewsets
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import api_view, detail_route, renderer_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
+from rest_framework.schemas import SchemaGenerator
+from rest_framework_swagger.renderers import OpenAPIRenderer, SwaggerUIRenderer
 
 from pipeline import cache
 from pipeline import exceptions
@@ -23,6 +25,16 @@ from . import serializers
 
 AUTHENTICATION_CLASSES = (BasicAuthentication, SessionAuthentication, TokenAuthentication)
 PERMISSION_CLASSES = (IsAuthenticated,)
+
+
+@api_view()
+@renderer_classes([OpenAPIRenderer, SwaggerUIRenderer])
+def schema_view(request):
+    """
+    Swagger API documentation
+    """
+    generator = SchemaGenerator(title='Videofront API')
+    return Response(generator.get_schema(request=request))
 
 
 class PlaylistFilter(filters.FilterSet):

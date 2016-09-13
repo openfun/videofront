@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'djcelery',
     'rest_framework',
     'rest_framework.authtoken',
+    'rest_framework_swagger',
 
     # Local apps
     'api',
@@ -124,7 +125,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.TokenAuthentication',
-    )
+    ),
 }
 
 # Logging
@@ -199,6 +200,15 @@ CELERYBEAT_SCHEDULE = {
         'task': 'transcode_video_restart',
         'schedule': timedelta(seconds=5),
     },
+}
+
+# Swagger documentation
+
+SWAGGER_SETTINGS = {
+    'APIS_SORTER': 'alpha',
+    'OPERATIONS_SORTER': 'alpha',
+    'USE_SESSION_AUTH': False,
+    'VALIDATOR_URL': None,
 }
 
 ##############################

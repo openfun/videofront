@@ -4,3 +4,5 @@ django-celery==3.1.17
 django-filter==0.14.0
 djangorestframework==3.4.5
 pycaption==1.0.0
+django-rest-swagger==2.0.5
+Markdown==2.6.6
