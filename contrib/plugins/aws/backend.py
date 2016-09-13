@@ -140,7 +140,6 @@ class Backend(pipeline.backend.BaseBackend):
             raise TranscodingFailed(error_message)
         else:
             raise TranscodingFailed('Unknown transcoding status: {}'.format(job_status))
-        # TODO shouldn't we delete original assets once transcoding has ended?
 
     def delete_video(self, public_video_id):
         folder = self.get_video_folder_key(public_video_id)

@@ -165,6 +165,9 @@ def _transcode_video(public_video_id, delete=True):
                     error_message = e.args[0] if e.args else ""
                     errors.append(error_message)
 
+        # Note that we do not delete original assets once transcoding has
+        # ended. This is because we want to keep the possibility of restarting
+        # the transcoding process.
         video.processing_state.progress = sum(jobs_progress) * 1. / len(jobs)
         video.processing_state.status = models.ProcessingState.STATUS_PROCESSING
         video.processing_state.save()

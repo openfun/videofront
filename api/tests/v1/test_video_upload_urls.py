@@ -24,6 +24,16 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
         self.assertEqual(self.user, models.VideoUploadUrl.objects.get().owner)
         self.assertIsNone(models.VideoUploadUrl.objects.get().playlist)
 
+    def test_create_video_upload_url_with_origin(self):
+        response = self.client.post(
+            reverse("api:v1:videouploadurl-list"),
+            data={"origin": "example.com"}
+        )
+
+        self.assertEqual(201, response.status_code)
+        upload_url = response.json()
+        self.assertIn("origin", upload_url)
+
     def test_list_videouploadurls(self):
         url = reverse("api:v1:videouploadurl-list")
         response = self.client.get(url)
@@ -81,7 +91,8 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
         video_upload_url = factories.VideoUploadUrlFactory(
             public_video_id='videoid',
             owner=self.user,
-            expires_at=time() + 3600
+            expires_at=time() + 3600,
+            origin="example.com",
         )
         video_file = StringIO('some video content')
 
@@ -98,7 +109,7 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
             )
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual('*', response['Access-Control-Allow-Origin'])
+        self.assertEqual('example.com', response['Access-Control-Allow-Origin'])
         upload_video.assert_called_once()
         start_transcoding.assert_called_once_with('videoid')
         self.assertEqual('videoid', response.json()['id'])
@@ -107,7 +118,8 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
         video_upload_url = factories.VideoUploadUrlFactory(
             public_video_id='videoid',
             owner=self.user,
-            expires_at=time() + 3600
+            expires_at=time() + 3600,
+            origin="*",
         )
         response = self.client.post(
             reverse("api:v1:video-upload", kwargs={'video_id': video_upload_url.public_video_id}),
@@ -122,7 +134,8 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
         video_upload_url = factories.VideoUploadUrlFactory(
             public_video_id='videoid',
             owner=self.user,
-            expires_at=time() - 7200
+            expires_at=time() - 7200,
+            origin="*",
         )
         video_file = StringIO('some video content')
 
@@ -132,14 +145,15 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
         )
 
         self.assertEqual(404, response.status_code)
-        self.assertEqual('*', response['Access-Control-Allow-Origin'])
+        self.assertNotIn('Access-Control-Allow-Origin', response)
 
-    def test_cors_on_upload_url(self):
+    def test_OPTIONS_on_upload_url(self):
         self.client.logout() # upload should work even for non logged-in clients
         video_upload_url = factories.VideoUploadUrlFactory(
             public_video_id='videoid',
             owner=self.user,
-            expires_at=time() + 3600
+            expires_at=time() + 3600,
+            origin="*",
         )
         response = self.client.options(
             reverse("api:v1:video-upload", kwargs={'video_id': video_upload_url.public_video_id}),

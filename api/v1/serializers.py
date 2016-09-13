@@ -48,7 +48,7 @@ class VideoUploadUrlSerializer(serializers.ModelSerializer):
     playlist = RelatedPlaylistField(slug_field='public_id', required=False)
 
     class Meta:
-        fields = ('id', 'expires_at', 'owner', 'playlist',)
+        fields = ('id', 'expires_at', 'owner', 'origin', 'playlist',)
         model = models.VideoUploadUrl
 
 

@@ -309,17 +309,21 @@ class UploadViewset(viewsets.ViewSet):
         """
         Upload a video file.
         """
-        cors_headers = {
-            "Access-Control-Allow-Origin": "*",
-        }
-        if request.method == 'OPTIONS':
-            # Allow uploads from all hosts
-            # TODO this should be configurable for each upload url
-            return Response({}, headers=cors_headers)
         try:
             video_upload_url = models.VideoUploadUrl.objects.available().get(public_video_id=video_id)
         except models.VideoUploadUrl.DoesNotExist:
-            return Response(status=rest_status.HTTP_404_NOT_FOUND, headers=cors_headers)
+            return Response(status=rest_status.HTTP_404_NOT_FOUND)
+
+        # CORS headers
+        cors_headers = {}
+        if video_upload_url.origin:
+            cors_headers["Access-Control-Allow-Origin"] = video_upload_url.origin
+
+        # OPTIONS call
+        if request.method == 'OPTIONS':
+            return Response({}, headers=cors_headers)
+
+        # POST call
         video_file = request.FILES.get('file')
         if video_file is None or video_file.size == 0:
             return Response({'file': "Missing argument"}, status=rest_status.HTTP_400_BAD_REQUEST, headers=cors_headers)

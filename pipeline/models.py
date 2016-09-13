@@ -87,6 +87,11 @@ class VideoUploadUrl(models.Model):
         verbose_name="Playlist to which the video will be added after upload",
         blank=True, null=True
     )
+    origin = models.CharField(
+        verbose_name="Access-Control-Allow-Origin header value to add to CORS responses",
+        max_length=256,
+        blank=True, null=True
+    )
 
     objects = managers.VideoUploadUrlManager()
 
