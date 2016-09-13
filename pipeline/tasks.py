@@ -82,6 +82,35 @@ def release_lock(name):
     except TransactionManagementError:
         logger.error("Could not release lock %s", name)
 
+def upload_video(public_video_id, file_object):
+    """
+    Store a video file for transcoding.
+
+    Args:
+        public_video_id (str)
+        file_object (file)
+    """
+    video_upload_url = models.VideoUploadUrl.objects.get(public_video_id=public_video_id)
+
+    # Upload video
+    backend.get().upload_video(public_video_id, file_object)
+
+    # Create video object
+    video = models.Video.objects.create(
+        public_id=video_upload_url.public_video_id,
+        owner=video_upload_url.owner,
+        title=file_object.name
+    )
+    if video_upload_url.playlist:
+        video.playlists.add(video_upload_url.playlist)
+
+    # Delete upload url
+    models.VideoUploadUrl.objects.filter(public_video_id=public_video_id).update(was_used=True)
+
+    # Start transcoding
+    send_task('transcode_video', args=(public_video_id,))
+
+
 def get_upload_url(user_id, filename, playlist_public_id=None):
     """
     Create an unused video upload url.
@@ -93,6 +122,7 @@ def get_upload_url(user_id, filename, playlist_public_id=None):
         'id': public video id
     }
     """
+    # TODO remove this
     user = User.objects.get(id=user_id)
     upload_url = backend.get().get_upload_url(filename)
 
@@ -120,6 +150,7 @@ def monitor_uploads():
 
     This task is run periodically by celery to check the state of upload urls.
     """
+    # TODO remove this
     for upload_url in models.VideoUploadUrl.objects.should_check():
         # We dispatch the responsibility of checking the urls to different
         # celery tasks because we do not want to choke the main monitor_uploads
@@ -139,6 +170,7 @@ def monitor_upload(public_video_id, wait=False):
         wait (bool): if True, and if there is a concurrent call to this
         function, it will block until completion of the concurrent task.
     """
+    # TODO remove this
     # This task should not run if there is already another one running
     with Lock('TASK_LOCK_MONITOR_UPLOAD:' + public_video_id, 60, wait=wait) as lock:
         if lock.is_acquired:
@@ -148,6 +180,7 @@ def monitor_upload(public_video_id, wait=False):
 
 
 def _monitor_upload(public_video_id):
+    # TODO remove this
     upload_url = models.VideoUploadUrl.objects.get(public_video_id=public_video_id)
     try:
         backend.get().check_video(upload_url.public_video_id)

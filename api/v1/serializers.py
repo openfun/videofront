@@ -1,3 +1,5 @@
+from time import time
+
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
@@ -30,6 +32,24 @@ class SubtitleSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('id', 'language', 'video_id', 'url')
         model = models.Subtitle
+
+
+class VideoUploadUrlSerializer(serializers.ModelSerializer):
+    class RelatedPlaylistField(serializers.SlugRelatedField):
+        def get_queryset(self):
+            return models.Playlist.objects.filter(owner=self.context['request'].user)
+
+    id = serializers.CharField(source='public_video_id', read_only=True)
+    expires_at = serializers.IntegerField(
+        read_only=True,
+        default=lambda: time() + models.VideoUploadUrl.objects.EXPIRE_DELAY
+    )
+    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    playlist = RelatedPlaylistField(slug_field='public_id', required=False)
+
+    class Meta:
+        fields = ('id', 'expires_at', 'owner', 'playlist',)
+        model = models.VideoUploadUrl
 
 
 class UserSerializer(serializers.ModelSerializer):

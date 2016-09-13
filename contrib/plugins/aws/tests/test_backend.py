@@ -64,6 +64,19 @@ class VideoUploadUrlTests(TestCase):
 
         self.assertRaises(pipeline.exceptions.VideoNotUploaded, backend.check_video, 'key')
 
+    def test_upload_video(self):
+        backend = aws_backend.Backend()
+        backend._s3_client = Mock(put_object=Mock())
+        file_object = Mock()
+        file_object.name = "somevideo.mp4"
+
+        backend.upload_video('videoid', file_object)
+
+        backend.s3_client.put_object.assert_called_once()
+        self.assertEqual("private", backend.s3_client.put_object.call_args[1]['ACL'])
+        self.assertEqual("videos/videoid/src/somevideo.mp4", backend.s3_client.put_object.call_args[1]['Key'])
+        self.assertEqual("dummys3storagebucket", backend.s3_client.put_object.call_args[1]['Bucket'])
+
     def test_delete_video_no_content(self):
         backend = aws_backend.Backend()
         backend._s3_client = Mock(list_objects=Mock(return_value={}))

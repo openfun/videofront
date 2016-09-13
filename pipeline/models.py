@@ -72,6 +72,7 @@ class VideoUploadUrl(models.Model):
         blank=False, null=True,
         default=utils.generate_random_id,
     )
+    # TODO remove me
     filename = models.CharField(
         verbose_name="Uploaded file name",
         max_length=128,
@@ -85,6 +86,7 @@ class VideoUploadUrl(models.Model):
         default=False,
         db_index=True
     )
+    # TODO remove me
     last_checked = models.DateTimeField(
         verbose_name="Last time it was checked if the url was used",
         blank=True, null=True,

@@ -283,9 +283,57 @@ class VideoViewSet(mixins.RetrieveModelMixin,
         return Response(serializer.data, status=rest_status.HTTP_201_CREATED)
 
 
+class VideoUploadUrlViewSet(viewsets.ModelViewSet):
+    """
+    Manage upload urls. Once an upload url has been created, it can be used by
+    any user (even unauthenticated users) to upload a new video. Once a video
+    has been uploaded, the corresponding video upload url is marked as used.
+    """
+    authentication_classes = AUTHENTICATION_CLASSES
+    permission_classes = PERMISSION_CLASSES
+
+    serializer_class = serializers.VideoUploadUrlSerializer
+
+    lookup_field = 'public_video_id'
+    lookup_url_kwarg = 'id'
+
+    def get_queryset(self):
+        return models.VideoUploadUrl.objects.available().filter(owner=self.request.user)
+
+
+class UploadViewset(viewsets.ViewSet):
+    lookup_field = 'public_video_id'
+    lookup_url_kwarg = 'video_id'
+
+    @detail_route(methods=['POST', 'OPTIONS'])
+    def upload(self, request, video_id=None):
+        """
+        Upload a video file.
+        """
+        cors_headers = {
+            "Access-Control-Allow-Origin": "*",
+        }
+        if request.method == 'OPTIONS':
+            # Allow uploads from all hosts
+            # TODO this should be configurable for each upload url
+            return Response({}, headers=cors_headers)
+        try:
+            video_upload_url = models.VideoUploadUrl.objects.available().get(public_video_id=video_id)
+        except models.VideoUploadUrl.DoesNotExist:
+            return Response(status=rest_status.HTTP_404_NOT_FOUND, headers=cors_headers)
+        video_file = request.FILES.get('file')
+        if video_file is None or video_file.size == 0:
+            return Response({'file': "Missing argument"}, status=rest_status.HTTP_400_BAD_REQUEST, headers=cors_headers)
+        tasks.upload_video(video_upload_url.public_video_id, video_file)
+        return Response({'id': video_upload_url.public_video_id}, headers=cors_headers)
+
+
 class VideoUploadViewSet(viewsets.ViewSet):
     """
     Generate video upload urls.
+
+    TODO this the old-style video upload view. It should be replaced by the
+    VideoUploadUrlViewset in videofront clients.
     """
     authentication_classes = AUTHENTICATION_CLASSES
     permission_classes = PERMISSION_CLASSES

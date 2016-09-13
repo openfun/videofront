@@ -92,7 +92,19 @@ class Backend(pipeline.backend.BaseBackend):
     # Overridden methods
     ####################
 
+    def upload_video(self, public_video_id, file_object):
+        """
+        Store a video file on S3.
+        """
+        self.s3_client.put_object(
+            ACL='private',
+            Body=file_object,
+            Bucket=settings.S3_BUCKET,
+            Key=self.get_video_folder_key(public_video_id) + 'src/' + file_object.name,
+        )
+
     def get_upload_url(self, filename):
+        # TODO remove this
         """
         Generate video upload urls for storage on Amazon S3
         """
@@ -117,6 +129,7 @@ class Backend(pipeline.backend.BaseBackend):
         }
 
     def check_video(self, public_video_id):
+        # TODO remove this
         # List content of 'src' folder
         key = self.get_src_file_key(public_video_id)
         if key is None:

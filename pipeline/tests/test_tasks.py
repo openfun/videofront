@@ -62,6 +62,29 @@ class LockTests(TransactionTestCase):
 
 class TasksTests(TestCase):
 
+    def test_upload_video(self):
+        mock_backend = Mock(return_value=Mock(
+            upload_video=Mock(),
+            start_transcoding=Mock(return_value=[]),
+            iter_formats=Mock(return_value=[]),
+        ))
+        factories.VideoUploadUrlFactory(
+            was_used=False,
+            public_video_id='videoid',
+            expires_at=time() + 3600
+        )
+        file_object = Mock()
+        file_object.name = "Some video.mp4"
+        with override_settings(PLUGIN_BACKEND=mock_backend):
+            tasks.upload_video('videoid', file_object)
+
+        self.assertEqual(1, models.Video.objects.count())
+        self.assertEqual(1, models.VideoUploadUrl.objects.count())
+        video = models.Video.objects.get()
+        video_upload_url = models.VideoUploadUrl.objects.get()
+        self.assertEqual("Some video.mp4", video.title)
+        self.assertTrue(video_upload_url.was_used)
+
     def test_monitor_uploads(self):
         def check_video(video_id):
             if video_id == "videoid1":

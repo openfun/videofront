@@ -4,7 +4,18 @@ from django.conf import settings
 
 class BaseBackend(object):
 
+    def upload_video(self, video_id, file_object):
+        """
+        Store a video file for transcoding.
+
+        Args:
+            video_id (str)
+            file_object (str)
+        """
+        raise NotImplementedError
+
     def get_upload_url(self, filename):
+        # TODO remove this
         """
         Return an upload url for uploading video files.
 
@@ -22,6 +33,7 @@ class BaseBackend(object):
         raise NotImplementedError
 
     def check_video(self, video_id):
+        # TODO remove this
         """
         Check if the video file for which an upload url was generated has been uploaded.
 

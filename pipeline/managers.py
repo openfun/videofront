@@ -10,10 +10,17 @@ class VideoUploadUrlManager(models.Manager):
     # the upload to finish.
     EXPIRE_DELAY = 3600
 
+    def available(self):
+        """
+        Filter out unavailable objects.
+        """
+        return self.filter(expires_at__gt=time() - self.EXPIRE_DELAY, was_used=False)
+
     def should_check(self):
         """
         Return upload urls for which we should check whether they have been used or not.
         """
+        # TODO remove this
         return self.filter(
             Q(
                 expires_at__gt=time() - self.EXPIRE_DELAY,
