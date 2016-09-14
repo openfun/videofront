@@ -84,11 +84,20 @@ class BaseBackend(object):
         subtitle is in an invalid format.
 
         Args:
-
             video_id (str)
             subtitle_id (str)
             language_code (str)
             content (bytes)
+        """
+        raise NotImplementedError
+
+    def upload_thumbnail(self, video_id, file_object):
+        """
+        Upload a video thumbnail file.
+
+        Args:
+            video_id (str)
+            file_object (file)
         """
         raise NotImplementedError
 

@@ -79,7 +79,7 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         except ErrorResponse as e:
             return e.response
         playlist.videos.add(video)
-        return Response({}, status=rest_status.HTTP_204_NO_CONTENT)
+        return Response(status=rest_status.HTTP_204_NO_CONTENT)
 
     @detail_route(methods=['POST'])
     def remove_video(self, request, **kwargs):
@@ -93,7 +93,7 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         except ErrorResponse as e:
             return e.response
         playlist.videos.remove(video)
-        return Response({}, status=rest_status.HTTP_204_NO_CONTENT)
+        return Response(status=rest_status.HTTP_204_NO_CONTENT)
 
     def _get_playlist_video(self, request, **kwargs):
         """
@@ -292,6 +292,29 @@ class VideoViewSet(mixins.RetrieveModelMixin,
             return Response({'file': e.args[0]}, status=rest_status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.data, status=rest_status.HTTP_201_CREATED)
+
+    @detail_route(methods=['POST'])
+    def thumbnail(self, request, **kwargs):
+        """
+        Thumbnail upload
+
+        The thumbnail file must be added as a "file" file object.
+        """
+        video = self.get_object()
+        serializer = serializers.SubtitleSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        attachment = request.FILES.get("file")
+
+        if not attachment:
+            return Response({'file': "Missing file"}, status=rest_status.HTTP_400_BAD_REQUEST)
+
+        try:
+            tasks.upload_thumbnail(video.public_id, attachment)
+        except exceptions.ThumbnailInvalid:
+            return Response({'file': "Invalid image"}, status=rest_status.HTTP_400_BAD_REQUEST)
+
+        return Response(status=rest_status.HTTP_204_NO_CONTENT)
 
 
 class VideoUploadUrlViewSet(viewsets.ModelViewSet):

@@ -1,3 +1,4 @@
+import os
 from time import time
 from mock import Mock
 
@@ -268,3 +269,16 @@ class UploadUrlsTasksTests(TestCase):
         self.assertIn('available', upload_url_ids)
         self.assertIn('expired_used', upload_url_ids)
         self.assertEqual(2, len(upload_url_ids))
+
+
+class UploadThumbnailTests(TestCase):
+
+    def test_upload_thumbnail(self):
+        factories.VideoFactory(public_id="videoid")
+        img = open(os.path.join(os.path.dirname(__file__), 'fixtures', 'elcapitan.jpg'), 'rb')
+
+        mock_backend = Mock(return_value=Mock(upload_thumbnail=Mock()))
+        with override_settings(PLUGIN_BACKEND=mock_backend):
+            tasks.upload_thumbnail("videoid", img)
+
+        mock_backend.return_value.upload_thumbnail.assert_called_once()

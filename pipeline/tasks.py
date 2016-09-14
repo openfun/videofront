@@ -1,16 +1,19 @@
 import logging
+import os
+from tempfile import NamedTemporaryFile
 from time import sleep
 
+from celery import shared_task
 from django.db.transaction import TransactionManagementError
 from django.core.cache import cache
 from django.utils.timezone import now
-from celery import shared_task
 import pycaption
 
 from videofront.celery_videofront import send_task
 from . import backend
 from . import exceptions
 from . import models
+from . import utils
 
 
 logger = logging.getLogger(__name__)
@@ -211,6 +214,31 @@ def upload_subtitle(public_video_id, subtitle_public_id, language_code, content)
         content = pycaption.WebVTTWriter().write(sub_reader().read(content))
 
     backend.get().upload_subtitle(public_video_id, subtitle_public_id, language_code, content)
+
+def upload_thumbnail(public_video_id, file_object):
+    """
+    Convert thumbnail to jpg and upload it
+
+    Args:
+        public_video_id (str)
+        content (bytes)
+    """
+    # Copy source image to temporary file
+    img_extension = os.path.splitext(file_object.name)[1]
+    src_img = NamedTemporaryFile(mode='wb', suffix=img_extension)
+    content = file_object.read()
+    src_img.write(content)
+    src_img.seek(0)
+
+    # Resize and save to temporary file
+    out_img = NamedTemporaryFile(mode='r', suffix=".jpg")
+    try:
+        utils.resize_image(src_img.name, out_img.name, 1024)
+    except OSError:
+        raise exceptions.ThumbnailInvalid
+
+    # Upload thumbnail
+    backend.get().upload_thumbnail(public_video_id, out_img)
 
 def delete_video(public_video_id):
     """ Delete all video assets """

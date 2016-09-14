@@ -1,3 +1,4 @@
+from io import BytesIO
 import json
 from time import time
 
@@ -5,7 +6,7 @@ from django.core.urlresolvers import reverse
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.utils.timezone import datetime, get_current_timezone
-from mock import Mock
+from mock import Mock, patch
 
 from pipeline import models
 from pipeline.tests.utils import override_plugin_backend
@@ -234,3 +235,26 @@ class VideosTests(BaseAuthenticatedTests):
         video = self.client.get(reverse("api:v1:video-detail", kwargs={'id': 'videoid'})).json()
         self.assertIn('thumbnail', video)
         self.assertEqual("http://imgur.com/videoid/thumb.jpg", video['thumbnail'])
+
+    @patch('pipeline.utils.resize_image')
+    @override_plugin_backend(
+        upload_thumbnail=lambda video_id, file_object: None,
+    )
+    def test_upload_video_thumbnail(self, mock_resize_image):
+        factories.VideoFactory(public_id="videoid", owner=self.user)
+        url = reverse("api:v1:video-thumbnail", kwargs={'id': 'videoid'})
+        thumb_file = BytesIO(b"thumb content")
+        thumb_file.name = "thumb.jpg"
+        response = self.client.post(url, {"name": "thumb.jpg", "file": thumb_file})
+
+        self.assertEqual(204, response.status_code)
+
+    def test_upload_invalid_video_thumbnail(self):
+        factories.VideoFactory(public_id="videoid", owner=self.user)
+        url = reverse("api:v1:video-thumbnail", kwargs={'id': 'videoid'})
+        thumb_file = BytesIO(b"invalid thumb content")
+        thumb_file.name = "thumb.jpg"
+        response = self.client.post(url, {"name": "thumb.jpg", "file": thumb_file})
+
+        self.assertEqual(400, response.status_code)
+        self.assertIn('file', response.json())

@@ -17,3 +17,10 @@ class SubtitleInvalid(Exception):
     Raised whenever subtitle cannot be converted to utf8 or to VTT format.
     """
     pass
+
+
+class ThumbnailInvalid(Exception):
+    """
+    Raised whenever the thumbnail file is invalid
+    """
+    pass

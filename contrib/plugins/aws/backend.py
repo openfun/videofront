@@ -60,6 +60,10 @@ class Backend(pipeline.backend.BaseBackend):
     def get_subtitle_key(cls, video_id, subtitle_id, language):
         return cls.SUBTITLE_KEY_PATTERN.format(video_id=video_id, subtitle_id=subtitle_id, language=language)
 
+    @classmethod
+    def get_thumbnail_key(cls, video_id):
+        return cls.get_video_folder_key(video_id) + 'thumbs/00001.png'
+
     def get_src_file_key(self, public_video_id):
         """
         List objects in the video src folder in order to find the key associated to
@@ -181,6 +185,14 @@ class Backend(pipeline.backend.BaseBackend):
             Key=self.get_subtitle_key(video_id, subtitle_id, language_code),
         )
 
+    def upload_thumbnail(self, video_id, file_object):
+        self.s3_client.put_object(
+            ACL='private',
+            Body=file_object.read(),
+            Bucket=settings.S3_BUCKET,
+            Key=self.get_thumbnail_key(video_id),
+        )
+
     def video_url(self, public_video_id, format_name):
         return self._get_download_base_url() + '/' + self.VIDEO_KEY_PATTERN.format(
             video_id=public_video_id,
@@ -196,4 +208,4 @@ class Backend(pipeline.backend.BaseBackend):
 
     def thumbnail_url(self, video_id):
         # Use the first generated thumbnail as the video thumbnail
-        return self._get_download_base_url() + '/' + self.get_video_folder_key(video_id) + 'thumbs/00001.png'
+        return self._get_download_base_url() + '/' + self.get_thumbnail_key(video_id)
