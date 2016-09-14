@@ -231,7 +231,7 @@ def upload_thumbnail(public_video_id, file_object):
     src_img.seek(0)
 
     # Resize and save to temporary file
-    out_img = NamedTemporaryFile(mode='r', suffix=".jpg")
+    out_img = NamedTemporaryFile(mode='rb', suffix=".jpg")
     try:
         utils.resize_image(src_img.name, out_img.name, 1024)
     except OSError:

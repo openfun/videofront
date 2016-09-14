@@ -1,14 +1,17 @@
+from io import BytesIO
+import shutil
+
 from botocore.exceptions import ClientError
 from django.test import TestCase
 from django.test.utils import override_settings
 
 from mock import Mock, patch
 
-from contrib.plugins.aws import backend as aws_backend
 import pipeline.backend
 import pipeline.exceptions
 import pipeline.tasks
 from pipeline.tests.factories import VideoFactory
+from contrib.plugins.aws import backend as aws_backend
 from . import utils
 
 
@@ -172,12 +175,33 @@ class TranscodeTests(TestCase):
 
         self.assertEqual([('HD', 256)], formats)
 
+@utils.override_s3_settings
+class ThumbnailsTests(TestCase):
+
     def test_thumbnail_url(self):
         backend = aws_backend.Backend()
         thumbnail_url = backend.thumbnail_url('videoid')
         self.assertIsNotNone(thumbnail_url)
         self.assertIn('videoid', thumbnail_url)
         self.assertIn('00001.png', thumbnail_url)
+
+    @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')
+    @patch('contrib.plugins.aws.backend.Backend.s3_client')
+    def test_thumbnail_compatibility(self, mock_s3_client):
+
+        def mock_resize_image(in_path, out_path, max_size):
+            # Mock resize just copies the content from the source path to the
+            # destination path
+            shutil.copy(in_path, out_path)
+
+        thumb_file = BytesIO(b'\x89PNG\r\n\x1a\n')
+        thumb_file.name = "thumb.png"
+
+        with patch('pipeline.utils.resize_image', mock_resize_image):
+            pipeline.tasks.upload_thumbnail('videoid', thumb_file)
+
+        mock_s3_client.put_object.assert_called_once()
+
 
 @utils.override_s3_settings
 class SubtitleTest(TestCase):
