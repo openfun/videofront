@@ -90,6 +90,16 @@ class Backend(pipeline.backend.BaseBackend):
                 bucket=settings.S3_BUCKET,
             )
 
+    def _get_default_acl(self):
+        """
+        If we are using a CDN, then objects are stored with private ACL by
+        default. Else, with public-read ACL.
+        """
+        if hasattr(settings, 'CLOUDFRONT_DOMAIN_NAME'):
+            return 'private'
+        else:
+            return 'public-read'
+
     ####################
     # Overridden methods
     ####################
@@ -98,8 +108,10 @@ class Backend(pipeline.backend.BaseBackend):
         """
         Store a video file on S3.
         """
+        # Source videos do not need to be accessible
+        acl = 'private'
         self.s3_client.put_object(
-            ACL='private',
+            ACL=acl,
             Body=file_object,
             Bucket=settings.S3_BUCKET,
             Key=self.get_video_folder_key(public_video_id) + 'src/' + file_object.name,
@@ -179,7 +191,7 @@ class Backend(pipeline.backend.BaseBackend):
 
     def upload_subtitle(self, video_id, subtitle_id, language_code, content):
         self.s3_client.put_object(
-            ACL='public-read',
+            ACL=self._get_default_acl(),
             Body=content,
             Bucket=settings.S3_BUCKET,
             Key=self.get_subtitle_key(video_id, subtitle_id, language_code),
@@ -187,7 +199,7 @@ class Backend(pipeline.backend.BaseBackend):
 
     def upload_thumbnail(self, video_id, file_object):
         self.s3_client.put_object(
-            ACL='private',
+            ACL=self._get_default_acl(),
             Body=file_object.read(),
             Bucket=settings.S3_BUCKET,
             Key=self.get_thumbnail_key(video_id),
