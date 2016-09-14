@@ -1,9 +1,7 @@
-from time import sleep
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.http import Http404
 import django_filters
 from rest_framework import filters
 from rest_framework import mixins
@@ -235,22 +233,6 @@ class VideoViewSet(mixins.RetrieveModelMixin,
             response_data = serializer.data
             cache.set(public_video_id, response_data)
         return Response(response_data)
-
-    def get_object(self):
-        try:
-            return super(VideoViewSet, self).get_object()
-        except Http404:
-            # Force a delay in order to avoid API flooding. This is necessary
-            # to avoid rate limiting by exterior API. It could probably be
-            # implemented differently (for instance: with django REST
-            # framework's UserRateThrottle) but this is the most effective
-            # solution to date.
-            sleep(0.1)
-
-            # Check if the video was not just uploaded and try again
-            public_video_id = self.kwargs[self.lookup_url_kwarg or self.lookup_field]
-            tasks.monitor_upload(public_video_id, wait=True)
-            return super(VideoViewSet, self).get_object()
 
     def perform_destroy(self, instance):
         # Delete external resources
