@@ -192,6 +192,7 @@ class ThumbnailsTests(TestCase):
         def mock_resize_image(in_path, out_path, max_size):
             # Mock resize just copies the content from the source path to the
             # destination path
+            self.assertIn(".png", out_path)
             shutil.copy(in_path, out_path)
 
         thumb_file = BytesIO(b'\x89PNG\r\n\x1a\n')

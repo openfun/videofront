@@ -4,6 +4,10 @@ from django.conf import settings
 
 class BaseBackend(object):
 
+    # Default suffix (and implied format ) for converted thumbnails. Change
+    # this value if you intend to serve thumbnails with a different format.
+    THUMBNAILS_SUFFIX = '.jpg'
+
     def upload_video(self, video_id, file_object):
         """
         Store a video file for transcoding.

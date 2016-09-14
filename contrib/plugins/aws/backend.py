@@ -8,6 +8,8 @@ import pipeline.utils
 
 
 class Backend(pipeline.backend.BaseBackend):
+    THUMBNAILS_SUFFIX = '.png'
+
     VIDEO_FOLDER_KEY_PATTERN = "videos/{video_id}/"
     VIDEO_KEY_PATTERN = VIDEO_FOLDER_KEY_PATTERN + "{resolution}.mp4"
     SUBTITLE_BASE_KEY_PATTERN = VIDEO_FOLDER_KEY_PATTERN + "subs/{subtitle_id}."
