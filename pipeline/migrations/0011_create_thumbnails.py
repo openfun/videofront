@@ -12,14 +12,13 @@ def create_thumbnails(apps, schema_editor):
     Video = apps.get_model("pipeline", "Video")
     backend = pipeline.backend.get()
     for video in Video.objects.all():
+        # Create new thumbnail id
+        video.public_thumbnail_id = pipeline.utils.generate_long_random_id()
+        video.save()
         try:
-            # Create new thumbnail id
-            video.public_thumbnail_id = pipeline.utils.generate_long_random_id()
-            video.save()
-
             # Create thumbnail
             backend.create_thumbnail(video.public_id, video.public_thumbnail_id)
-        except NotImplementedError:
+        except:
             pass
 
 def delete_thumbnails(apps, schema_editor):
