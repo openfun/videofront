@@ -296,7 +296,10 @@ class VideoViewSet(mixins.RetrieveModelMixin,
         except exceptions.ThumbnailInvalid:
             return Response({'file': "Invalid image"}, status=rest_status.HTTP_400_BAD_REQUEST)
 
-        return Response(status=rest_status.HTTP_204_NO_CONTENT)
+        return Response(
+            {'thumbnail': models.Video.objects.get(pk=video.pk).thumbnail_url},
+            status=rest_status.HTTP_200_OK
+        )
 
 
 class VideoUploadUrlViewSet(viewsets.ModelViewSet):

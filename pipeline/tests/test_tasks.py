@@ -83,14 +83,16 @@ class TasksTests(TestCase):
         video = models.Video.objects.get()
         video_upload_url = models.VideoUploadUrl.objects.get()
         self.assertEqual("Some video.mp4", video.title)
+        self.assertLess(10, len(video.public_thumbnail_id))
         self.assertTrue(video_upload_url.was_used)
 
     def test_transcode_video_success(self):
-        factories.VideoFactory(public_id='videoid')
+        factories.VideoFactory(public_id='videoid', public_thumbnail_id='thumbid')
         mock_backend = Mock(return_value=Mock(
             start_transcoding=Mock(return_value=['job1']),
             check_progress=Mock(return_value=(42, True)),
             iter_formats=Mock(return_value=[('SD', 128)]),
+            create_thumbnail=Mock(),
         ))
 
         with override_settings(PLUGIN_BACKEND=mock_backend):
@@ -101,6 +103,7 @@ class TasksTests(TestCase):
         self.assertEqual(models.ProcessingState.STATUS_SUCCESS, video_processing_state.status)
         self.assertEqual("", video_processing_state.message)
         self.assertEqual(42, video_processing_state.progress)
+        mock_backend.return_value.create_thumbnail.assert_called_once_with('videoid', 'thumbid')
         mock_backend.return_value.check_progress.assert_called_once_with('job1')
         self.assertEqual(1, models.VideoFormat.objects.count())
         video_format = models.VideoFormat.objects.get()
@@ -274,11 +277,15 @@ class UploadUrlsTasksTests(TestCase):
 class UploadThumbnailTests(TestCase):
 
     def test_upload_thumbnail(self):
-        factories.VideoFactory(public_id="videoid")
+        factories.VideoFactory(public_id="videoid", public_thumbnail_id="old_thumbid")
         img = open(os.path.join(os.path.dirname(__file__), 'fixtures', 'elcapitan.jpg'), 'rb')
 
-        mock_backend = Mock(return_value=Mock(upload_thumbnail=Mock()))
+        mock_backend = Mock(return_value=Mock(
+            upload_thumbnail=Mock(),
+            delete_thumbnail=Mock(),
+        ))
         with override_settings(PLUGIN_BACKEND=mock_backend):
             tasks.upload_thumbnail("videoid", img)
 
         mock_backend.return_value.upload_thumbnail.assert_called_once()
+        mock_backend.return_value.delete_thumbnail.assert_called_once_with("videoid", "old_thumbid")

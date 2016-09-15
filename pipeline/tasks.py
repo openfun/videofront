@@ -1,5 +1,4 @@
 import logging
-import os
 from tempfile import NamedTemporaryFile
 from time import sleep
 
@@ -175,6 +174,10 @@ def _transcode_video(public_video_id, delete=True):
         video.processing_state.status = models.ProcessingState.STATUS_PROCESSING
         video.processing_state.save()
 
+    # Create thumbnail
+    backend.get().create_thumbnail(public_video_id, video.public_thumbnail_id)
+
+    # Check status
     video.processing_state.message = "\n".join(errors)
     models.VideoFormat.objects.filter(video=video).delete()
     if errors:
@@ -223,22 +226,26 @@ def upload_thumbnail(public_video_id, file_object):
         public_video_id (str)
         content (bytes)
     """
-    # Copy source image to temporary file
-    img_extension = os.path.splitext(file_object.name)[1]
-    src_img = NamedTemporaryFile(mode='wb', suffix=img_extension)
-    content = file_object.read()
-    src_img.write(content)
-    src_img.seek(0)
+    video = models.Video.objects.get(public_id=public_video_id)
+    out_img = NamedTemporaryFile(mode='rb', suffix=".jpg")
 
-    # Resize and save to temporary file
-    out_img = NamedTemporaryFile(mode='rb', suffix=backend.get().THUMBNAILS_SUFFIX)
     try:
-        utils.resize_image(src_img.name, out_img.name, 1024)
+        utils.make_thumbnail(file_object, out_img.name)
     except OSError:
         raise exceptions.ThumbnailInvalid
 
+    # Generate new thumbnail id
+    thumb_id = utils.generate_long_random_id()
+
+    # Delete old thumbnail
+    backend.get().delete_thumbnail(public_video_id, video.public_thumbnail_id)
+
     # Upload thumbnail
-    backend.get().upload_thumbnail(public_video_id, out_img)
+    backend.get().upload_thumbnail(public_video_id, thumb_id, out_img)
+
+    # Update video properties
+    video.public_thumbnail_id = thumb_id
+    video.save()
 
 def delete_video(public_video_id):
     """ Delete all video assets """

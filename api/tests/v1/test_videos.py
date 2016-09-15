@@ -228,26 +228,32 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual(video_in_playlist.public_id, videos[0]["id"])
 
     @override_plugin_backend(
-        thumbnail_url=lambda video_id: "http://imgur.com/{}/thumb.jpg".format(video_id),
+        thumbnail_url=lambda video_id, thumb_id: "http://imgur.com/{}/thumbs/{}.jpg".format(video_id, thumb_id),
     )
     def test_get_video_thumbnail(self):
-        factories.VideoFactory(public_id="videoid", owner=self.user)
+        factories.VideoFactory(public_id="videoid", owner=self.user, public_thumbnail_id="thumbid")
         video = self.client.get(reverse("api:v1:video-detail", kwargs={'id': 'videoid'})).json()
         self.assertIn('thumbnail', video)
-        self.assertEqual("http://imgur.com/videoid/thumb.jpg", video['thumbnail'])
+        self.assertEqual("http://imgur.com/videoid/thumbs/thumbid.jpg", video['thumbnail'])
 
     @patch('pipeline.utils.resize_image')
     @override_plugin_backend(
-        upload_thumbnail=lambda video_id, file_object: None,
+        upload_thumbnail=lambda video_id, thumb_id, file_object: None,
+        delete_thumbnail=lambda video_id, thumb_id: None,
+        thumbnail_url=lambda video_id, thumb_id: "http://example.com/{}/{}.jpg".format(video_id, thumb_id)
     )
     def test_upload_video_thumbnail(self, mock_resize_image):
-        factories.VideoFactory(public_id="videoid", owner=self.user)
+        video = factories.VideoFactory(public_id="videoid", owner=self.user)
+        old_thumbnail_url = video.thumbnail_url
         url = reverse("api:v1:video-thumbnail", kwargs={'id': 'videoid'})
         thumb_file = BytesIO(b"thumb content")
         thumb_file.name = "thumb.jpg"
         response = self.client.post(url, {"name": "thumb.jpg", "file": thumb_file})
 
-        self.assertEqual(204, response.status_code)
+        self.assertEqual(200, response.status_code)
+        self.assertIn('thumbnail', response.json())
+        self.assertIn("http://example.com/videoid", response.json()['thumbnail'])
+        self.assertNotEqual(old_thumbnail_url, response.json()['thumbnail'])
 
     def test_upload_invalid_video_thumbnail(self):
         factories.VideoFactory(public_id="videoid", owner=self.user)

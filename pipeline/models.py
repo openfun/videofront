@@ -19,6 +19,13 @@ class Video(models.Model):
         blank=False, null=True,
         default=utils.generate_random_id,
     )
+    public_thumbnail_id = models.CharField(
+        max_length=20, unique=True,
+        validators=[MinLengthValidator(20)],
+        blank=False, null=False,
+        default=utils.generate_long_random_id,
+    )
+
     owner = models.ForeignKey(User)
 
     @property
@@ -35,7 +42,7 @@ class Video(models.Model):
 
     @property
     def thumbnail_url(self):
-        return backend.get().thumbnail_url(self.public_id)
+        return backend.get().thumbnail_url(self.public_id, self.public_thumbnail_id)
 
 
 @receiver(post_save, sender=Video)

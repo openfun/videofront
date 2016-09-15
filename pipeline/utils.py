@@ -1,7 +1,14 @@
+import os
 import random
 import string
+from tempfile import NamedTemporaryFile
 
+from django.conf import settings
 from PIL import Image
+
+
+def generate_long_random_id():
+    return generate_random_id(20)
 
 def generate_random_id(length=12):
     """
@@ -9,6 +16,22 @@ def generate_random_id(length=12):
     """
     choices = string.ascii_letters + string.digits
     return ''.join([random.choice(choices) for _ in range(0, length)])
+
+def make_thumbnail(file_object, out_path):
+    """
+    Make a thumbnail with the appropriate size.
+
+    Args:
+        file_object (file): must have a 'name' attribute
+        out_path (str): destination path
+    """
+    # Copy source image to temporary file
+    img_extension = os.path.splitext(file_object.name)[1]
+    src_img = NamedTemporaryFile(mode='wb', suffix=img_extension)
+    src_img.write(file_object.read())
+    src_img.seek(0)
+
+    resize_image(src_img.name, out_path, settings.THUMBNAILS_SIZE)
 
 def resize_image(in_path, out_path, max_size):
     """

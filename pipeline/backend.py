@@ -4,10 +4,6 @@ from django.conf import settings
 
 class BaseBackend(object):
 
-    # Default suffix (and implied format ) for converted thumbnails. Change
-    # this value if you intend to serve thumbnails with a different format.
-    THUMBNAILS_SUFFIX = '.jpg'
-
     def upload_video(self, video_id, file_object):
         """
         Store a video file for transcoding.
@@ -95,13 +91,34 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
-    def upload_thumbnail(self, video_id, file_object):
+    def create_thumbnail(self, video_id, thumb_id):
+        """
+        Create a thumbnail for this video
+
+        Args:
+            video_id (str)
+            thumb_id (str)
+        """
+        raise NotImplementedError
+
+    def upload_thumbnail(self, video_id, thumb_id, file_object):
         """
         Upload a video thumbnail file.
 
         Args:
             video_id (str)
+            thumb_id (str): new thumbnail id
             file_object (file)
+        """
+        raise NotImplementedError
+
+    def delete_thumbnail(self, video_id, thumb_id):
+        """
+        Delete a video thumbnail file.
+
+        Args:
+            video_id (str)
+            thumb_id (str): new thumbnail id
         """
         raise NotImplementedError
 
@@ -113,7 +130,7 @@ class BaseBackend(object):
         """
         raise NotImplementedError
 
-    def thumbnail_url(self, video_id):
+    def thumbnail_url(self, video_id, thumb_id):
         """
         Returns the url at which the video thumbnail can be downloaded. This
         should be a fast method.

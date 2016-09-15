@@ -178,12 +178,30 @@ class TranscodeTests(TestCase):
 @utils.override_s3_settings
 class ThumbnailsTests(TestCase):
 
+    def setUp(self):
+        VideoFactory(public_id="videoid")
+
+    @patch('pipeline.utils.resize_image')
+    @patch('contrib.plugins.aws.backend.Backend.s3_client')
+    def test_create_thumbnail(self, mock_s3_client, mock_resize_image):
+        thumbnail_file = BytesIO(b"")
+        mock_s3_client.get_object = Mock(return_value={
+            'Body': thumbnail_file
+        })
+        backend = aws_backend.Backend()
+
+        backend.create_thumbnail('videoid', 'thumbid')
+
+        mock_s3_client.get_object.assert_called_once()
+        self.assertEqual('videos/videoid/thumbs/00001.png', mock_s3_client.get_object.call_args[1]['Key'])
+        mock_resize_image.assert_called_once()
+
     def test_thumbnail_url(self):
         backend = aws_backend.Backend()
-        thumbnail_url = backend.thumbnail_url('videoid')
+        thumbnail_url = backend.thumbnail_url('videoid', 'thumbid')
         self.assertIsNotNone(thumbnail_url)
         self.assertIn('videoid', thumbnail_url)
-        self.assertIn('00001.png', thumbnail_url)
+        self.assertIn('thumbid.jpg', thumbnail_url)
 
     @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')
     @patch('contrib.plugins.aws.backend.Backend.s3_client')
@@ -192,7 +210,7 @@ class ThumbnailsTests(TestCase):
         def mock_resize_image(in_path, out_path, max_size):
             # Mock resize just copies the content from the source path to the
             # destination path
-            self.assertIn(".png", out_path)
+            self.assertIn(".jpg", out_path)
             shutil.copy(in_path, out_path)
 
         thumb_file = BytesIO(b'\x89PNG\r\n\x1a\n')
@@ -203,6 +221,16 @@ class ThumbnailsTests(TestCase):
 
         mock_s3_client.put_object.assert_called_once()
 
+    @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')
+    @patch('contrib.plugins.aws.backend.Backend.s3_client')
+    def test_delete_thumbnail(self, mock_s3_client):
+        backend = aws_backend.Backend()
+
+        backend.delete_thumbnail('videoid', 'thumbid')
+
+        mock_s3_client.delete_object.assert_called_once_with(
+            Bucket="dummys3storagebucket", Key="videos/videoid/thumbs/thumbid.jpg"
+        )
 
 @utils.override_s3_settings
 class SubtitleTest(TestCase):

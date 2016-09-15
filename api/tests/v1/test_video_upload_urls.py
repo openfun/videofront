@@ -98,10 +98,12 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
 
         upload_video = Mock()
         start_transcoding = Mock(return_value=[])
+        create_thumbnail = Mock()
         with override_plugin_backend(
             upload_video=upload_video,
             start_transcoding=start_transcoding,
             iter_formats=Mock(return_value=[]),
+            create_thumbnail=create_thumbnail,
         ):
             response = self.client.post(
                 reverse("api:v1:video-upload", kwargs={'video_id': video_upload_url.public_video_id}),
@@ -111,6 +113,7 @@ class VideoUploadUrlTests(BaseAuthenticatedTests):
         self.assertEqual(200, response.status_code)
         self.assertEqual('example.com', response['Access-Control-Allow-Origin'])
         upload_video.assert_called_once()
+        create_thumbnail.assert_called_once()
         start_transcoding.assert_called_once_with('videoid')
         self.assertEqual('videoid', response.json()['id'])
 

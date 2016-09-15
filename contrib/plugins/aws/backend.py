@@ -1,3 +1,5 @@
+from tempfile import NamedTemporaryFile
+
 from botocore.exceptions import ClientError
 import boto3
 from django.conf import settings
@@ -8,8 +10,6 @@ import pipeline.utils
 
 
 class Backend(pipeline.backend.BaseBackend):
-    THUMBNAILS_SUFFIX = '.png'
-
     VIDEO_FOLDER_KEY_PATTERN = "videos/{video_id}/"
     VIDEO_KEY_PATTERN = VIDEO_FOLDER_KEY_PATTERN + "{resolution}.mp4"
     SUBTITLE_BASE_KEY_PATTERN = VIDEO_FOLDER_KEY_PATTERN + "subs/{subtitle_id}."
@@ -63,8 +63,8 @@ class Backend(pipeline.backend.BaseBackend):
         return cls.SUBTITLE_KEY_PATTERN.format(video_id=video_id, subtitle_id=subtitle_id, language=language)
 
     @classmethod
-    def get_thumbnail_key(cls, video_id):
-        return cls.get_video_folder_key(video_id) + 'thumbs/00001.png'
+    def get_thumbnail_key(cls, video_id, thumb_id, ext='jpg'):
+        return cls.get_video_folder_key(video_id) + 'thumbs/{}.{}'.format(thumb_id, ext)
 
     def get_src_file_key(self, public_video_id):
         """
@@ -199,13 +199,38 @@ class Backend(pipeline.backend.BaseBackend):
             Key=self.get_subtitle_key(video_id, subtitle_id, language_code),
         )
 
-    def upload_thumbnail(self, video_id, file_object):
+    def create_thumbnail(self, video_id, thumb_id):
+        # Download 00001.png
+        response = self.s3_client.get_object(
+            Bucket=settings.S3_BUCKET,
+            Key=self.get_thumbnail_key(video_id, '00001', 'png'),
+        )
+        initial_thumbnail_file = response['Body']
+        initial_thumbnail_file.name = '00001.png'
+
+        # Convert it to jpg
+        thumbnail_file = NamedTemporaryFile(mode='rb', suffix=".jpg")
+        pipeline.utils.make_thumbnail(initial_thumbnail_file, thumbnail_file.name)
+
+        # Upload jpg thumbnail
+        self.upload_thumbnail(video_id, thumb_id, thumbnail_file)
+
+    def upload_thumbnail(self, video_id, thumb_id, file_object):
         self.s3_client.put_object(
             ACL=self._get_default_acl(),
             Body=file_object.read(),
             Bucket=settings.S3_BUCKET,
-            Key=self.get_thumbnail_key(video_id),
+            Key=self.get_thumbnail_key(video_id, thumb_id),
         )
+
+    def delete_thumbnail(self, video_id, thumb_id):
+        try:
+            self.s3_client.delete_object(
+                Bucket=settings.S3_BUCKET,
+                Key=self.get_thumbnail_key(video_id, thumb_id),
+            )
+        except ClientError:
+            pass
 
     def video_url(self, public_video_id, format_name):
         return self._get_download_base_url() + '/' + self.VIDEO_KEY_PATTERN.format(
@@ -220,6 +245,6 @@ class Backend(pipeline.backend.BaseBackend):
             language=language,
         )
 
-    def thumbnail_url(self, video_id):
+    def thumbnail_url(self, video_id, thumb_id):
         # Use the first generated thumbnail as the video thumbnail
-        return self._get_download_base_url() + '/' + self.get_thumbnail_key(video_id)
+        return self._get_download_base_url() + '/' + self.get_thumbnail_key(video_id, thumb_id)
