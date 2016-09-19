@@ -155,7 +155,10 @@ def _transcode_video(public_video_id, delete=True):
         started_at=now()
     )
 
-    jobs = backend.get().start_transcoding(public_video_id)
+    # Start transcoding
+    jobs = backend.get().start_transcoding(public_video_id)# TODO what if this raises an error?
+
+    # Monitor transcoding progress
     success_job_indexes = []
     error_job_indexes = []
     errors = []

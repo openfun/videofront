@@ -80,8 +80,7 @@ class BaseBackend(object):
 
     def upload_subtitle(self, video_id, subtitle_id, language_code, content):
         """
-        Upload a video subtitle file. Raise a SubtitleInvalid in case the
-        subtitle is in an invalid format.
+        Upload a video subtitle file.
 
         Args:
             video_id (str)

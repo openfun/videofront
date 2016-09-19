@@ -94,6 +94,18 @@ Check test coverage:
     coverage run ./manage.py test
     coverage report
 
+## Plugins
+
+### Local backend
+
+Install transcoding requirements:
+
+    sudo apt-get install faac x264
+
+A guide to encoder setttings and resolutions: https://support.google.com/youtube/answer/1722171?hl=en
+
+Recommended resolutions and aspect ratios: https://support.google.com/youtube/answer/6375112
+
 ## Deployment
 
 ### Production settings

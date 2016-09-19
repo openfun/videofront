@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.views.generic import RedirectView
@@ -9,3 +10,7 @@ urlpatterns = [
 
     url(r'^admin/', admin.site.urls),
 ]
+
+if hasattr(settings, 'BACKEND_URLS'):
+    # Include backend-specific urls
+    urlpatterns.append(url(r'^backend/', include(settings.BACKEND_URLS)))

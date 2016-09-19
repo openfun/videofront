@@ -31,6 +31,7 @@ S3_PRIVATE_BUCKET = 's3privatebucket'
 # CLOUDFRONT_DOMAIN_NAME = "xxxx.cloudfront.net"
 
 # Presets are of the form: (name, ID, bitrate)
+# TODO make this a dict (more readable)
 ELASTIC_TRANSCODER_PRESETS = [
     ('LD', '1351620000001-000030', 900),  # System preset: Generic 480p 4:3
     ('SD', '1351620000001-000010', 2400), # System preset: Generic 720p
