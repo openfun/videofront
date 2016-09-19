@@ -136,6 +136,7 @@ class TasksTests(TestCase):
         self.assertEqual(models.ProcessingState.STATUS_FAILED, video_processing_state.status)
         self.assertEqual("error message", video_processing_state.message)
         self.assertEqual(50, video_processing_state.progress)
+        mock_backend.return_value.create_thumbnail.assert_not_called()
 
     def test_transcode_video_unexpected_failure(self):
         factories.VideoFactory(public_id='videoid')
@@ -206,6 +207,21 @@ class TasksTests(TestCase):
             models.ProcessingState.objects.get(video=video).status
         )
         mock_backend.return_value.delete_video.assert_not_called()
+
+    def test_transcode_video_thumbnail_create_fails(self):
+        video = factories.VideoFactory(public_id='videoid')
+        mock_backend = Mock(return_value=Mock(
+            start_transcoding=Mock(return_value=[]),
+            iter_formats=Mock(return_value=[]),
+            create_thumbnail=Mock(side_effect=ValueError("description")),
+        ))
+
+        with override_settings(PLUGIN_BACKEND=mock_backend):
+            tasks.transcode_video('videoid')
+
+        processing_state = models.ProcessingState.objects.get(video=video)
+        self.assertEqual(models.ProcessingState.STATUS_FAILED, processing_state.status)
+        self.assertEqual("thumbnail creation: description", processing_state.message)
 
 
 class SubtitleTasksTest(TestCase):

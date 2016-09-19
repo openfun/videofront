@@ -175,7 +175,12 @@ def _transcode_video(public_video_id, delete=True):
         video.processing_state.save()
 
     # Create thumbnail
-    backend.get().create_thumbnail(public_video_id, video.public_thumbnail_id)
+    if not errors:
+        try:
+            backend.get().create_thumbnail(public_video_id, video.public_thumbnail_id)
+        except Exception as e:
+            error_message = "thumbnail creation: " + e.args[0] if e.args else ""
+            errors.append(error_message)
 
     # Check status
     video.processing_state.message = "\n".join(errors)
