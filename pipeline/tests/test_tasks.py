@@ -223,6 +223,25 @@ class TasksTests(TestCase):
         self.assertEqual(models.ProcessingState.STATUS_FAILED, processing_state.status)
         self.assertEqual("thumbnail creation: description", processing_state.message)
 
+    def test_video_is_deleted_during_transcoding(self):
+        factories.VideoFactory(public_id='videoid')
+
+        def start_transcoding(video_id):
+            models.Video.objects.filter(public_id='videoid').delete()
+            return []
+
+        mock_backend = Mock(return_value=Mock(
+            start_transcoding=start_transcoding,
+            iter_formats=Mock(return_value=[]),
+        ))
+
+        with override_settings(PLUGIN_BACKEND=mock_backend):
+            tasks.transcode_video('videoid')
+
+        self.assertEqual(0, models.Video.objects.count())
+        self.assertEqual(0, models.ProcessingState.objects.count())
+        mock_backend.return_value.delete_video.assert_called_once()
+
 
 class SubtitleTasksTest(TestCase):
 
