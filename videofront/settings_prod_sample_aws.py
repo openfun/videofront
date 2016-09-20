@@ -19,8 +19,13 @@ AWS_ACCESS_KEY_ID = 'awsaccesskey'
 AWS_SECRET_ACCESS_KEY = 'awssecretaccesskey'
 AWS_REGION = 'eu-west-1' # http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions
 
-# This is the bucket that will store all video assets.
+# S3 bucket that will store all public video assets.
 S3_BUCKET = 's3bucket'
+# S3 bucket that will store all private video assets. In particular, source
+# video files will be stored in this bucket. If you do not wish your source
+# video files to be private, just set this setting to the same value as
+# S3_BUCKET.
+S3_PRIVATE_BUCKET = 's3privatebucket'
 
 # Eventually use a cloudfront distribution to stream and download objects
 # CLOUDFRONT_DOMAIN_NAME = "xxxx.cloudfront.net"

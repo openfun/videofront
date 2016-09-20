@@ -74,7 +74,7 @@ class Backend(pipeline.backend.BaseBackend):
 
         Returns None if no source file exists.
         """
-        bucket = settings.S3_BUCKET
+        bucket = settings.S3_PRIVATE_BUCKET
         src_folder_key = self.get_video_folder_key(public_video_id) + 'src/'
         objects = self.s3_client.list_objects(Bucket=bucket, Prefix=src_folder_key)
         if objects.get('Contents'):
@@ -115,7 +115,7 @@ class Backend(pipeline.backend.BaseBackend):
         self.s3_client.put_object(
             ACL=acl,
             Body=file_object,
-            Bucket=settings.S3_BUCKET,
+            Bucket=settings.S3_PRIVATE_BUCKET,
             Key=self.get_video_folder_key(public_video_id) + 'src/' + file_object.name,
         )
 
@@ -170,15 +170,16 @@ class Backend(pipeline.backend.BaseBackend):
     def delete_objects(self, prefix):
         """
         Recursively delete all objects with the given prefix. This can be used
-        to delete an entire folder.
+        to delete an entire folder. Objects are deleted both from the public
+        and the private bucket.
         """
-        bucket = settings.S3_BUCKET
-        list_objects = self.s3_client.list_objects(Bucket=bucket, Prefix=prefix)
-        for obj in list_objects.get('Contents', []):
-            self.s3_client.delete_object(
-                Bucket=bucket,
-                Key=obj['Key']
-            )
+        for bucket in [settings.S3_BUCKET, settings.S3_PRIVATE_BUCKET]:
+            list_objects = self.s3_client.list_objects(Bucket=bucket, Prefix=prefix)
+            for obj in list_objects.get('Contents', []):
+                self.s3_client.delete_object(
+                    Bucket=bucket,
+                    Key=obj['Key']
+                )
 
     def iter_formats(self, public_video_id):
         for resolution, _preset_id, bitrate in settings.ELASTIC_TRANSCODER_PRESETS:

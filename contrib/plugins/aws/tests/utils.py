@@ -7,7 +7,8 @@ override_s3_settings = override_settings(
     AWS_ACCESS_KEY_ID='dummyawsaccesskey',
     AWS_SECRET_ACCESS_KEY='dummyawssecretkey',
     AWS_REGION='dummyawsregion',
-    S3_BUCKET='dummys3storagebucket',
+    S3_PRIVATE_BUCKET='privates3bucket',
+    S3_BUCKET='publics3bucket',
 )
 
 def load_json_fixture(name):

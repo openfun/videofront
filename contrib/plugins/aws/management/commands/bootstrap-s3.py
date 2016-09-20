@@ -9,7 +9,12 @@ class Command(BaseCommand):
     help = 'Bootstrap S3 for video file storage'
 
     def handle(self, *args, **options):
-        bucket_name = settings.S3_BUCKET
+        acl = 'private' if hasattr(settings, 'CLOUDFRONT_DOMAIN_NAME') else 'public-read'
+
+        self.create_bucket(settings.S3_BUCKET, acl)
+        self.create_bucket(settings.S3_PRIVATE_BUCKET, 'private')
+
+    def create_bucket(self, bucket_name, acl):
         backend = Backend()
         try:
             backend.s3_client.head_bucket(Bucket=bucket_name)
@@ -17,7 +22,7 @@ class Command(BaseCommand):
         except ClientError:
             self.stdout.write("Creating bucket {}...".format(bucket_name))
             backend.s3_client.create_bucket(
-                ACL='private',
+                ACL=acl,
                 Bucket=bucket_name,
                 CreateBucketConfiguration={
                     'LocationConstraint': settings.AWS_REGION

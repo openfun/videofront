@@ -29,7 +29,7 @@ class VideoUploadUrlTests(TestCase):
         backend.s3_client.put_object.assert_called_once()
         self.assertEqual("private", backend.s3_client.put_object.call_args[1]['ACL'])
         self.assertEqual("videos/videoid/src/somevideo.mp4", backend.s3_client.put_object.call_args[1]['Key'])
-        self.assertEqual("dummys3storagebucket", backend.s3_client.put_object.call_args[1]['Bucket'])
+        self.assertEqual("privates3bucket", backend.s3_client.put_object.call_args[1]['Bucket'])
 
     def test_delete_video_no_content(self):
         backend = aws_backend.Backend()
@@ -37,7 +37,10 @@ class VideoUploadUrlTests(TestCase):
         backend.delete_video('videoid')
 
         backend.s3_client.list_objects.assert_any_call(
-            Bucket='dummys3storagebucket', Prefix='videos/videoid/'
+            Bucket='privates3bucket', Prefix='videos/videoid/'
+        )
+        backend.s3_client.list_objects.assert_any_call(
+            Bucket='publics3bucket', Prefix='videos/videoid/'
         )
 
     def test_delete_subtitle(self):
@@ -46,7 +49,7 @@ class VideoUploadUrlTests(TestCase):
         backend.delete_subtitle('videoid', 'subid')
 
         backend.s3_client.list_objects.assert_any_call(
-            Bucket='dummys3storagebucket', Prefix='videos/videoid/subs/subid.'
+            Bucket='publics3bucket', Prefix='videos/videoid/subs/subid.'
         )
 
     @override_settings(PLUGIN_BACKEND='contrib.plugins.aws.backend.Backend')
@@ -229,7 +232,7 @@ class ThumbnailsTests(TestCase):
         backend.delete_thumbnail('videoid', 'thumbid')
 
         mock_s3_client.delete_object.assert_called_once_with(
-            Bucket="dummys3storagebucket", Key="videos/videoid/thumbs/thumbid.jpg"
+            Bucket="publics3bucket", Key="videos/videoid/thumbs/thumbid.jpg"
         )
 
 @utils.override_s3_settings
