@@ -128,6 +128,7 @@ def transcode_video(public_video_id, delete=True):
     with Lock('TASK_LOCK_TRANSCODE_VIDEO:' + public_video_id, 3600) as lock:
         if lock.is_acquired:
             try:
+                models.invalidate_cache(public_video_id)
                 _transcode_video(public_video_id, delete=delete)
             except Exception as e:
                 # Store error message
@@ -139,6 +140,8 @@ def transcode_video(public_video_id, delete=True):
                     message=message,
                 )
                 raise
+            finally:
+                models.invalidate_cache(public_video_id)
 
 def _transcode_video(public_video_id, delete=True):
     """

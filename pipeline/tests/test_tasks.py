@@ -2,6 +2,7 @@ import os
 from time import time
 from mock import Mock
 
+from django.core.urlresolvers import reverse
 from django.db.utils import IntegrityError
 from django.test import TestCase, TransactionTestCase
 from django.test.utils import override_settings
@@ -137,6 +138,29 @@ class TasksTests(TestCase):
         self.assertEqual("error message", video_processing_state.message)
         self.assertEqual(50, video_processing_state.progress)
         mock_backend.return_value.create_thumbnail.assert_not_called()
+
+    def test_video_transcoding_failure_invalidates_cache(self):
+        # Login
+        user = models.User.objects.create(username="test", is_active=True)
+        user.set_password("password")
+        user.save()
+        self.client.login(username="test", password="password")
+
+        factories.VideoFactory(public_id='videoid', owner=user)
+
+        mock_backend = Mock(return_value=Mock(
+            start_transcoding=Mock(return_value=['job']),
+            check_progress=Mock(side_effect=exceptions.TranscodingFailed),
+        ))
+
+        video_pre_transcoding = self.client.get(reverse("api:v1:video-detail", kwargs={"id": 'videoid'})).json()
+        with override_settings(PLUGIN_BACKEND=mock_backend):
+            tasks.transcode_video('videoid')
+        video_post_transcoding = self.client.get(reverse("api:v1:video-detail", kwargs={"id": 'videoid'})).json()
+
+        self.assertEqual('pending', video_pre_transcoding['processing']['status'])
+        self.assertEqual('failed', video_post_transcoding['processing']['status'])
+
 
     def test_transcode_video_unexpected_failure(self):
         factories.VideoFactory(public_id='videoid')

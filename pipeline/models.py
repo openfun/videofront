@@ -178,8 +178,7 @@ class VideoFormat(models.Model):
 @receiver([post_save, post_delete], sender=Video)
 def invalidate_video_cache(sender, instance=None, created=False, **kwargs):
     if instance:
-        cache.invalidate(instance.public_id)
-
+        invalidate_cache(instance.public_id)
 
 @receiver([post_save, post_delete], sender=Subtitle)
 @receiver([post_save, post_delete], sender=ProcessingState)
@@ -189,4 +188,7 @@ def invalidate_related_video_cache(sender, instance=None, created=False, **kwarg
     Invalidate the video cache whenever a related object is saved.
     """
     if instance:
-        cache.invalidate(instance.video.public_id)
+        invalidate_cache(instance.video.public_id)
+
+def invalidate_cache(public_video_id):
+    cache.invalidate(public_video_id)
