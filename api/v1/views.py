@@ -185,11 +185,24 @@ class VideoFilter(filters.FilterSet):
         fields = ['playlist_id']
 
 
-class VideoViewSet(mixins.RetrieveModelMixin,
-                   mixins.UpdateModelMixin,
-                   mixins.DestroyModelMixin,
-                   mixins.ListModelMixin,
-                   viewsets.GenericViewSet):
+class VideoQuerysetMixin(object):
+
+    def get_queryset(self):
+        # Note that here we do not exclude failed videos
+        queryset = models.Video.objects.select_related(
+            'processing_state'
+        ).prefetch_related(
+            'subtitles', 'formats'
+        ).filter(
+           owner=self.request.user
+        )
+
+        return queryset
+
+
+class VideoListViewSet(mixins.ListModelMixin,
+                       VideoQuerysetMixin,
+                       viewsets.GenericViewSet):
     """
     List available videos. Note that you may obtain only the videos that belong
     to a certain playlist by passing the argument `?playlist_id=xxxx`.
@@ -202,25 +215,36 @@ class VideoViewSet(mixins.RetrieveModelMixin,
 
     serializer_class = serializers.VideoSerializer
 
-    lookup_field = 'public_id'
-    lookup_url_kwarg = 'id'
-
     filter_backends = (filters.DjangoFilterBackend,)
     filter_class = VideoFilter
 
 
     def get_queryset(self):
-        queryset = models.Video.objects.select_related(
-            'processing_state'
-        ).prefetch_related(
-            'subtitles', 'formats'
-        ).exclude(
+        return super(VideoListViewSet, self).get_queryset().exclude(
             processing_state__status=models.ProcessingState.STATUS_FAILED
-        ).filter(
-           owner=self.request.user
         )
 
-        return queryset
+
+class VideoViewSet(mixins.RetrieveModelMixin,
+                   mixins.UpdateModelMixin,
+                   mixins.DestroyModelMixin,
+                   VideoQuerysetMixin,
+                   viewsets.GenericViewSet):
+    """
+    Viewset for individual videos. This is a view that allows a user to access
+    videos that have failed transcoding.
+    """
+    # Similar to a generic model viewset, but without creation features. Video
+    # creation is only available through upload.
+
+    authentication_classes = AUTHENTICATION_CLASSES
+    permission_classes = PERMISSION_CLASSES
+
+    serializer_class = serializers.VideoSerializer
+
+    lookup_field = 'public_id'
+    lookup_url_kwarg = 'id'
+
 
     def retrieve(self, request, *args, **kwargs):
         # We override the `retrieve` method in order to cache API results for

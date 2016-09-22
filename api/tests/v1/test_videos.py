@@ -101,6 +101,18 @@ class VideosTests(BaseAuthenticatedTests):
         self.assertEqual('processing', videos[0]['processing']['status'])
         self.assertEqual(42, videos[0]['processing']['progress'])
 
+    def test_get_failed_video(self):
+        video = factories.VideoFactory(public_id="videoid", title='videotitle', owner=self.user)
+        video.processing_state.status = models.ProcessingState.STATUS_FAILED
+        video.processing_state.save()
+
+        response_detail = self.client.get(reverse("api:v1:video-detail", kwargs={"id": "videoid"}))
+        response_list = self.client.get(reverse("api:v1:video-list"))
+
+        self.assertEqual(200, response_detail.status_code)
+        self.assertEqual(200, response_list.status_code)
+        self.assertEqual([], response_list.json())
+
     def test_get_video_with_cache(self):
         factories.VideoFactory(public_id="videoid", title="Some title", owner=self.user)
         with self.assertNumQueries(self.VIDEOS_LIST_NUM_QUERIES):

@@ -178,6 +178,7 @@ class TranscodeTests(TestCase):
 
         self.assertEqual([('HD', 256)], formats)
 
+
 @utils.override_s3_settings
 class ThumbnailsTests(TestCase):
 
