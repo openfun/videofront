@@ -144,7 +144,7 @@ Recommended nginx configuration:
 
     $ cat /etc/nginx/sites-enabled/videofront.vhost 
     upstream django {
-        server 127.0.0.1:8001;
+        server 127.0.0.1:8000;
     }
 
     server {
@@ -158,16 +158,19 @@ Recommended nginx configuration:
           alias /home/user/videofront/static/;
         }
         
-        location / {
-            location ~ ^/api/v1/videos/(?P<video_id>.*)/upload/ {
-                # Max video upload size
-                client_max_body_size 1G;
-            }
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_redirect off;
 
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header Host $http_host;
-            proxy_redirect off;
-            proxy_pass django;
+        location ~ ^/api/v1/videos/(.*)/upload/ {
+            # Max video upload size
+            client_max_body_size 1G;
+
+            proxy_pass http://django;
+        }
+
+        location / {
+            proxy_pass http://django;
         }
     }
 
