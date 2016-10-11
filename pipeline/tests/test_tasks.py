@@ -87,6 +87,24 @@ class TasksTests(TestCase):
         self.assertLess(10, len(video.public_thumbnail_id))
         self.assertTrue(video_upload_url.was_used)
 
+    def test_upload_url_invalidated_after_failed_upload(self):
+        mock_backend = Mock(return_value=Mock(
+            upload_video=Mock(side_effect=ValueError),
+        ))
+        factories.VideoUploadUrlFactory(
+            was_used=False,
+            public_video_id='videoid',
+            expires_at=time() + 3600
+        )
+        file_object = Mock()
+        file_object.name = "Some video.mp4"
+        with override_settings(PLUGIN_BACKEND=mock_backend):
+            self.assertRaises(ValueError, tasks.upload_video, 'videoid', file_object)
+
+        self.assertEqual(0, models.Video.objects.count())
+        self.assertEqual(0, models.VideoUploadUrl.objects.available().count())
+
+
     def test_transcode_video_success(self):
         factories.VideoFactory(public_id='videoid', public_thumbnail_id='thumbid')
         mock_backend = Mock(return_value=Mock(

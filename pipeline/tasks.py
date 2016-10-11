@@ -91,6 +91,9 @@ def upload_video(public_video_id, file_object):
         public_video_id (str)
         file_object (file)
     """
+    # Make upload url unavailable immediately to avoid race conditions
+    models.VideoUploadUrl.objects.filter(public_video_id=public_video_id).update(was_used=True)
+
     video_upload_url = models.VideoUploadUrl.objects.get(public_video_id=public_video_id)
 
     # Upload video
@@ -104,9 +107,6 @@ def upload_video(public_video_id, file_object):
     )
     if video_upload_url.playlist:
         video.playlists.add(video_upload_url.playlist)
-
-    # Delete upload url
-    models.VideoUploadUrl.objects.filter(public_video_id=public_video_id).update(was_used=True)
 
     # Start transcoding
     send_task('transcode_video', args=(public_video_id,))
