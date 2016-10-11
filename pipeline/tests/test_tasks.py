@@ -184,7 +184,7 @@ class TasksTests(TestCase):
         factories.VideoFactory(public_id='videoid')
 
         mock_backend = Mock(return_value=Mock(
-            start_transcoding=Mock(side_effect=ValueError("random error"))
+            start_transcoding=Mock(side_effect=ValueError(666, "random error"))
         ))
 
         with override_settings(PLUGIN_BACKEND=mock_backend):
@@ -192,7 +192,7 @@ class TasksTests(TestCase):
 
         video_processing_state = models.ProcessingState.objects.get()
         self.assertEqual(models.ProcessingState.STATUS_FAILED, video_processing_state.status)
-        self.assertEqual("random error", video_processing_state.message)
+        self.assertEqual("666\nrandom error", video_processing_state.message)
 
     def test_transcode_video_twice(self):
         factories.VideoFactory(public_id='videoid')

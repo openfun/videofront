@@ -132,7 +132,7 @@ def transcode_video(public_video_id, delete=True):
                 _transcode_video(public_video_id, delete=delete)
             except Exception as e:
                 # Store error message
-                message = "\n".join(e.args)
+                message = "\n".join([str(arg) for arg in e.args])
                 models.ProcessingState.objects.filter(
                     video__public_id=public_video_id
                 ).update(
