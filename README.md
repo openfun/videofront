@@ -1,4 +1,4 @@
-# Videofront
+# Videofront [![Build Status](https://travis-ci.org/openfun/videofront.svg?branch=master)](https://travis-ci.org/openfun/videofront)
 
 A scalable video hosting platform written in Django.
 
