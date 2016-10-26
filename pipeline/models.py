@@ -28,6 +28,9 @@ class Video(models.Model):
 
     owner = models.ForeignKey(User)
 
+    def __str__(self):
+        return '{} - {}'.format(self.public_id, self.title)
+
     @property
     def processing_status(self):
         return self.processing_state.status if self.processing_state else None
@@ -64,6 +67,9 @@ class Playlist(models.Model):
         blank=False, null=True,
         default=utils.generate_random_id,
     )
+
+    def __str__(self):
+        return '{} - {}'.format(self.public_id, self.name)
 
 
 class VideoUploadUrl(models.Model):
@@ -102,6 +108,9 @@ class VideoUploadUrl(models.Model):
 
     objects = managers.VideoUploadUrlManager()
 
+    def __str__(self):
+        return self.public_video_id
+
 
 class ProcessingState(models.Model):
 
@@ -137,6 +146,9 @@ class ProcessingState(models.Model):
     )
     message = models.CharField(max_length=1024, blank=True)
 
+    def __str__(self):
+        return '{} - {}'.format(self.video, self.status)
+
 
 class Subtitle(models.Model):
 
@@ -163,6 +175,9 @@ class Subtitle(models.Model):
             self.video.public_id, self.public_id, self.language
         )
 
+    def __str__(self):
+        return '{} - {} [{}]'.format(self.public_id, self.video, self.language)
+
 
 class VideoFormat(models.Model):
 
@@ -173,6 +188,9 @@ class VideoFormat(models.Model):
     @property
     def url(self):
         return backend.get().video_url(self.video.public_id, self.name)
+
+    def __str__(self):
+        return '{} - {} [{}]'.format(self.name, self.video, self.bitrate)
 
 
 @receiver([post_save, post_delete], sender=Video)
