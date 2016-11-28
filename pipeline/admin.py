@@ -54,7 +54,7 @@ class VideoFormatAdmin(admin.ModelAdmin):
     model = models.VideoFormat
     list_display = ('__str__', 'name', 'video', 'bitrate')
     raw_id_fields = ('video',)
-    search_fields = ('name', 'bitrate', 'video_public_id', 'video__title')
+    search_fields = ('name', 'bitrate', 'video__public_id', 'video__title')
 
 
 admin.site.register(models.Video, VideoAdmin)
