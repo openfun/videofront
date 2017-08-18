@@ -23,12 +23,17 @@ logger.addHandler(ch)
 
 def get_videos_to_be_transcoded(course_key):
     logger.info("Trying to retreive playlist for course key '{}'".format(course_key))
-    playlist = Playlist.objects.get(name=course_key)
+    # For some reasons, some courses are mapped to multiple
+    # playlist. That's why, we are using filter() and not get().
+    playlist_list = Playlist.objects.filter(name=course_key)
     logger.info("Processing course '{}'".format(course_key))
-    to_be_transcoded = playlist.videos.exclude(
-        formats__name='UL',
-    ).exclude(processing_state__status='failed')
-    return to_be_transcoded.all()
+    to_be_transcoded = []
+    for playlist in playlist_list:
+        videos_queryset = playlist.videos.exclude(
+            formats__name='UL',
+        ).exclude(processing_state__status='failed')
+        to_be_transcoded.extend(list(videos_queryset))
+    return to_be_transcoded
 
 
 def estimate_cost(course_key):
