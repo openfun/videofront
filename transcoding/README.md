@@ -35,7 +35,6 @@ Here is the setting where you put the new format to be applied to existing video
 ## Usage example
 
 
-
 This command looks at all videos for the given course and calculates the cost
 for runnig the transcoding.
 
@@ -50,8 +49,20 @@ before transcoding.
     transcode.transcode_for_courses('course-v1:fun+fun+session01')
 
 
-## Courses with multiple sessions
 
+## Cost Estimation
+
+
+This module does an estimation of the transcoding cost.
+It's based on the explanations found on the official Amazon doc.
+
+* https://aws.amazon.com/elastictranscoder/pricing/
+
+
+The pricing used is : Standard Definition – SD (Resolution of less than 720p) $0.017 per minute
+
+
+## Courses with multiple sessions
 
 
 If you want to transcode videos for a course with multiple sessions, you will
@@ -73,8 +84,19 @@ You should pass all the sessions of the course this way - separated by spaces :
 ## Logging
 
 
-
 This module uses python logging to log in the console and also on file.
 
 Look inside the code to see where log entries are sent. File logging would be for instance
 in `/var/tmp/video-transcode.log`
+
+
+## Dependences
+
+
+This module depends on `ffprobe` wich is found on Ubuntu 14 `ffmpeg` package.
+
+
+    sudo add-apt-repository ppa:mc3man/trusty-media
+    sudo apt-get update
+    sudo apt-get install ffmpeg
+
