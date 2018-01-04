@@ -1,4 +1,4 @@
-from django.conf.global_settings import LANGUAGES
+from django.conf import global_settings
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator, MinValueValidator, MaxValueValidator
 from django.db import models
@@ -152,8 +152,6 @@ class ProcessingState(models.Model):
 
 class Subtitle(models.Model):
 
-    LANGUAGE_CHOICES = [(code, name) for code, name in LANGUAGES if len(code) == 2]
-
     video = models.ForeignKey(Video, related_name='subtitles')
     public_id = models.CharField(
         max_length=20, unique=True,
@@ -164,7 +162,7 @@ class Subtitle(models.Model):
     language = models.CharField(
         max_length=2,
         validators=[MinLengthValidator(2)],
-        choices=LANGUAGE_CHOICES,
+        choices=global_settings.LANGUAGES,
         null=True,
         blank=False
     )
