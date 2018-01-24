@@ -160,7 +160,7 @@ class Subtitle(models.Model):
         default=utils.generate_random_id,
     )
     language = models.CharField(
-        max_length=2,
+        max_length=7,
         validators=[MinLengthValidator(2)],
         choices=global_settings.LANGUAGES,
         null=True,
