@@ -1,6 +1,6 @@
 celery==3.1.25
 Django==1.11.13
-django-celery==3.1.17
+django-celery==3.2.2
 django-filter==1.1.0
 djangorestframework==3.6.4
 django-rest-swagger==2.2.0
