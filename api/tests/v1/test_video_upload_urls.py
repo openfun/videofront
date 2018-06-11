@@ -1,7 +1,7 @@
 from io import StringIO
 from time import time
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from mock import Mock
 
 from pipeline import models

@@ -1,8 +1,8 @@
 from __future__ import unicode_literals
 from io import StringIO
 
-from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
+from django.urls import reverse
 from mock import Mock, patch
 
 from pipeline import models
