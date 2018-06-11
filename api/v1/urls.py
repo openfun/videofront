@@ -6,6 +6,9 @@ from rest_framework import routers
 from . import views
 
 
+app_name = "v1"
+
+
 class Router(routers.DefaultRouter):
     """
     We override the router in order to provide some documentation to the API root.
