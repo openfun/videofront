@@ -3,7 +3,7 @@ Django==1.11.13
 django-celery==3.1.17
 django-filter==1.1.0
 djangorestframework==3.6.4
-django-rest-swagger==2.0.5
+django-rest-swagger==2.2.0
 pycaption==1.0.0
 Markdown==2.6.6
 Pillow==3.3.1
