@@ -8,7 +8,7 @@ from rest_framework import mixins
 from rest_framework import status as rest_status
 from rest_framework import viewsets
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
-from rest_framework.decorators import api_view, detail_route, renderer_classes
+from rest_framework.decorators import action, api_view, renderer_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.schemas import SchemaGenerator
@@ -65,7 +65,7 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         return models.Playlist.objects.filter(owner=self.request.user)
 
 
-    @detail_route(methods=['POST'])
+    @action(methods=['post'], detail=True)
     def add_video(self, request, **kwargs):
         """
         Add a video to a playlist
@@ -79,7 +79,7 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         playlist.videos.add(video)
         return Response(status=rest_status.HTTP_204_NO_CONTENT)
 
-    @detail_route(methods=['POST'])
+    @action(methods=['post'], detail=True)
     def remove_video(self, request, **kwargs):
         """
         Remove a video from a playlist
@@ -263,7 +263,7 @@ class VideoViewSet(mixins.RetrieveModelMixin,
         super(VideoViewSet, self).perform_destroy(instance)
         tasks.delete_video(instance.public_id)
 
-    @detail_route(methods=['POST'])
+    @action(methods=['post'], detail=True)
     def subtitles(self, request, **kwargs):
         """
         Subtitle upload
@@ -299,7 +299,7 @@ class VideoViewSet(mixins.RetrieveModelMixin,
 
         return Response(serializer.data, status=rest_status.HTTP_201_CREATED)
 
-    @detail_route(methods=['POST'])
+    @action(methods=['post'], detail=True)
     def thumbnail(self, request, **kwargs):
         """
         Thumbnail upload
@@ -348,7 +348,7 @@ class UploadViewset(viewsets.ViewSet):
     lookup_field = 'public_video_id'
     lookup_url_kwarg = 'video_id'
 
-    @detail_route(methods=['POST', 'OPTIONS'])
+    @action(methods=['post', 'options'], detail=True)
     def upload(self, request, video_id=None):
         """
         Upload a video file.
