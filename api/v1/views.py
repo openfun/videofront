@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
 import django_filters
-from rest_framework import filters
+from django_filters import rest_framework as filters
 from rest_framework import mixins
 from rest_framework import status as rest_status
 from rest_framework import viewsets
