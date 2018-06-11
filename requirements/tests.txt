@@ -3,5 +3,4 @@
 
 mock==2.0.0
 coverage
-factory-boy==2.7.0
-fake-factory==0.7.4
+factory-boy==2.11.1
