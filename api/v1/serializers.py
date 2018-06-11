@@ -41,8 +41,9 @@ class VideoUploadUrlSerializer(serializers.ModelSerializer):
 
     id = serializers.CharField(source='public_video_id', read_only=True)
     expires_at = serializers.IntegerField(
-        read_only=True,
-        default=lambda: time() + models.VideoUploadUrl.objects.EXPIRE_DELAY
+        default=serializers.CreateOnlyDefault(
+            lambda: time() + models.VideoUploadUrl.objects.EXPIRE_DELAY
+        )
     )
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
     playlist = RelatedPlaylistField(slug_field='public_id', required=False)
