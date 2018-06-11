@@ -83,7 +83,6 @@ Alternatively, you may use the [videofront-client](https://github.com/openfun/vi
 Install test and contrib requirements:
 
     pip install -r requirements/tests.txt
-    pip install -r requirements/aws.txt
 
 Run unit tests:
 
