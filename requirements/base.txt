@@ -6,4 +6,4 @@ djangorestframework==3.6.4
 django-rest-swagger==2.2.0
 pycaption==1.0.1
 Markdown==2.6.11
-Pillow==3.3.1
+Pillow==5.1.0
