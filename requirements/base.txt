@@ -5,5 +5,5 @@ django-filter==1.1.0
 djangorestframework==3.6.4
 django-rest-swagger==2.2.0
 pycaption==1.0.0
-Markdown==2.6.6
+Markdown==2.6.11
 Pillow==3.3.1
