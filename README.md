@@ -1,6 +1,6 @@
 # Videofront [![Build Status](https://travis-ci.org/openfun/videofront.svg?branch=master)](https://travis-ci.org/openfun/videofront)
 
-A scalable video hosting platform written in Django.
+A scalable video hosting platform written in Django 2, for Python 3.6.
 
 Initially, Videofront was developed to host videos of MOOCs taught on [Open edX](https://open.edx.org/) platforms, but it can easily be used in just any web platform that requires video embedding.
 
