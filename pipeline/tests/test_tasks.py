@@ -1,6 +1,6 @@
 import os
 from time import time
-from mock import Mock
+from unittest.mock import Mock
 
 from django.db.utils import IntegrityError
 from django.test import TestCase, TransactionTestCase

@@ -1,6 +1,5 @@
 -r base.txt
 -r aws.txt
 
-mock==2.0.0
 coverage
 factory-boy==2.11.1

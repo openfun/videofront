@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 from io import StringIO
+from unittest.mock import Mock, patch
 
 from django.test.utils import override_settings
 from django.urls import reverse
-from mock import Mock, patch
 
 from pipeline import models
 from pipeline.tests.utils import override_plugin_backend

@@ -1,12 +1,12 @@
 from io import BytesIO
 import json
 from time import time
+from unittest.mock import Mock, patch
 
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils.timezone import datetime, get_current_timezone
-from mock import Mock, patch
 
 from pipeline import models
 from pipeline.tests.utils import override_plugin_backend
