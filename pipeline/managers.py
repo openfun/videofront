@@ -19,4 +19,6 @@ class VideoUploadUrlManager(models.Manager):
         """
         Unused upload urls that have expired.
         """
-        return self.filter(expires_at__lt=time() - 2*self.EXPIRE_DELAY, was_used=False)
+        return self.filter(
+            expires_at__lt=time() - 2 * self.EXPIRE_DELAY, was_used=False
+        )

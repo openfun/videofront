@@ -8,23 +8,24 @@ import django.db.models.deletion
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('pipeline', '0004_auto_20160825_0741'),
-    ]
+    dependencies = [("pipeline", "0004_auto_20160825_0741")]
 
     operations = [
-        migrations.RenameModel(
-            old_name='VideoTranscoding',
-            new_name='ProcessingState',
+        migrations.RenameModel(old_name="VideoTranscoding", new_name="ProcessingState"),
+        migrations.AlterField(
+            model_name="processingstate",
+            name="started_at",
+            field=models.DateTimeField(
+                auto_now=True, verbose_name="Time of processing job start"
+            ),
         ),
         migrations.AlterField(
-            model_name='processingstate',
-            name='started_at',
-            field=models.DateTimeField(auto_now=True, verbose_name='Time of processing job start'),
-        ),
-        migrations.AlterField(
-            model_name='processingstate',
-            name='video',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='processing_state', to='pipeline.Video'),
+            model_name="processingstate",
+            name="video",
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="processing_state",
+                to="pipeline.Video",
+            ),
         ),
     ]

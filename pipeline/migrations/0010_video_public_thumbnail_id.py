@@ -4,19 +4,22 @@ from __future__ import unicode_literals
 
 import django.core.validators
 from django.db import migrations, models
+
 import pipeline.utils
 
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('pipeline', '0009_auto_20160914_1204'),
-    ]
+    dependencies = [("pipeline", "0009_auto_20160914_1204")]
 
     operations = [
         migrations.AddField(
-            model_name='video',
-            name='public_thumbnail_id',
-            field=models.CharField(default=pipeline.utils.generate_long_random_id, max_length=20, validators=[django.core.validators.MinLengthValidator(20)]),
-        ),
+            model_name="video",
+            name="public_thumbnail_id",
+            field=models.CharField(
+                default=pipeline.utils.generate_long_random_id,
+                max_length=20,
+                validators=[django.core.validators.MinLengthValidator(20)],
+            ),
+        )
     ]

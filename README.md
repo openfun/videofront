@@ -106,7 +106,7 @@ Pick a backend and customize the settings file accordingly:
 
 The recommended approach is to start gunicorn and celery workers with `supervisorctl`:
 
-    $ cat /etc/supervisor/conf.d/videofront.conf 
+    $ cat /etc/supervisor/conf.d/videofront.conf
     [group:videofront]
     programs=gunicorn,celery,celery-beat
 
@@ -141,7 +141,7 @@ The recommended approach is to start gunicorn and celery workers with `superviso
 
 Recommended nginx configuration:
 
-    $ cat /etc/nginx/sites-enabled/videofront.vhost 
+    $ cat /etc/nginx/sites-enabled/videofront.vhost
     upstream django {
         server 127.0.0.1:8000;
     }
@@ -156,7 +156,7 @@ Recommended nginx configuration:
           # This depends on the STATIC_ROOT setting
           alias /home/user/videofront/static/;
         }
-        
+
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header Host $http_host;
         proxy_redirect off;

@@ -7,13 +7,6 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('pipeline', '0002_auto_20160824_0640'),
-    ]
+    dependencies = [("pipeline", "0002_auto_20160824_0640")]
 
-    operations = [
-        migrations.RenameModel(
-            old_name='Subtitles',
-            new_name='Subtitle',
-        ),
-    ]
+    operations = [migrations.RenameModel(old_name="Subtitles", new_name="Subtitle")]

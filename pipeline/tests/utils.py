@@ -22,6 +22,7 @@ class TestPluginBackendFactory(object):
 class TestPluginBackend(pipeline.backend.BaseBackend):
     pass
 
+
 def override_plugin_backend(**kwargs):
     """
     Override a selection of methods of the plugin backend, for test purposes.
