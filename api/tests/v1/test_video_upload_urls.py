@@ -2,11 +2,13 @@ from io import StringIO
 from time import time
 
 from django.core.urlresolvers import reverse
+
 from mock import Mock
 
 from pipeline import models
-from pipeline.tests.utils import override_plugin_backend
 from pipeline.tests import factories
+from pipeline.tests.utils import override_plugin_backend
+
 from .base import BaseAuthenticatedTests
 
 

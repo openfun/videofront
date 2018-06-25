@@ -1,13 +1,15 @@
 from __future__ import unicode_literals
+
 from io import StringIO
 
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
+
 from mock import Mock, patch
 
 from pipeline import models
-from pipeline.tests.utils import override_plugin_backend
 from pipeline.tests import factories
+from pipeline.tests.utils import override_plugin_backend
 
 from .base import BaseAuthenticatedTests
 

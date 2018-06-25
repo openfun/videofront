@@ -1,5 +1,6 @@
-from botocore.exceptions import ClientError
 from django.conf import settings
+
+from botocore.exceptions import ClientError
 
 from contrib.plugins.aws.backend import Backend as AwsBackend
 

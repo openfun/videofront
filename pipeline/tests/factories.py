@@ -1,5 +1,7 @@
-import factory.django
 from django.contrib.auth.models import User
+
+import factory.django
+
 from pipeline import models
 
 

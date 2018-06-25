@@ -1,15 +1,14 @@
 import os
 from time import time
-from mock import Mock
 
 from django.core.urlresolvers import reverse
 from django.db.utils import IntegrityError
 from django.test import TestCase, TransactionTestCase
 from django.test.utils import override_settings
 
-from pipeline import exceptions
-from pipeline import models
-from pipeline import tasks
+from mock import Mock
+
+from pipeline import exceptions, models, tasks
 from pipeline.tests import factories
 from videofront.celery_videofront import send_task
 

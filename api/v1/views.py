@@ -2,24 +2,25 @@
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
+
 import django_filters
-from rest_framework import filters
-from rest_framework import mixins
+from rest_framework import filters, mixins
 from rest_framework import status as rest_status
 from rest_framework import viewsets
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
+from rest_framework.authentication import (
+    BasicAuthentication,
+    SessionAuthentication,
+    TokenAuthentication,
+)
 from rest_framework.decorators import api_view, detail_route, renderer_classes
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.schemas import SchemaGenerator
 from rest_framework_swagger.renderers import OpenAPIRenderer, SwaggerUIRenderer
 
-from pipeline import cache
-from pipeline import exceptions
-from pipeline import models
-from pipeline import tasks
-from . import serializers
+from pipeline import cache, exceptions, models, tasks
 
+from . import serializers
 
 AUTHENTICATION_CLASSES = (
     BasicAuthentication,

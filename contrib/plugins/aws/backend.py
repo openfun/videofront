@@ -1,12 +1,13 @@
 from tempfile import NamedTemporaryFile
 
-from botocore.exceptions import ClientError
-import boto3
 from django.conf import settings
 
+import boto3
+from botocore.exceptions import ClientError
+
 import pipeline.backend
-from pipeline.exceptions import TranscodingFailed
 import pipeline.utils
+from pipeline.exceptions import TranscodingFailed
 
 
 class Backend(pipeline.backend.BaseBackend):

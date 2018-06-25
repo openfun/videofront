@@ -2,18 +2,16 @@ import logging
 from tempfile import NamedTemporaryFile
 from time import sleep
 
-from celery import shared_task
-from django.db.transaction import TransactionManagementError
 from django.core.cache import cache
+from django.db.transaction import TransactionManagementError
 from django.utils.timezone import now
+
 import pycaption
+from celery import shared_task
 
 from videofront.celery_videofront import send_task
-from . import backend
-from . import exceptions
-from . import models
-from . import utils
 
+from . import backend, exceptions, models, utils
 
 logger = logging.getLogger(__name__)
 
