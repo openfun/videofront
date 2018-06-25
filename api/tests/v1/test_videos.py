@@ -244,12 +244,12 @@ class VideosTests(BaseAuthenticatedTests):
                 {
                     "name": "SD",
                     "url": "http://example.com/videoid/SD.mp4",
-                    "bitrate": 128,
+                    "bitrate": 128.0,
                 },
                 {
                     "name": "HD",
                     "url": "http://example.com/videoid/HD.mp4",
-                    "bitrate": 256,
+                    "bitrate": 256.0,
                 },
             ],
             video["formats"],

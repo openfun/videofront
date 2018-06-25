@@ -193,6 +193,9 @@ class VideoFormat(models.Model):
     name = models.CharField(max_length=128)
     bitrate = models.FloatField(validators=[MinValueValidator(0)])
 
+    class Meta:
+        ordering = ["id"]
+
     @property
     def url(self):
         return backend.get().video_url(self.video.public_id, self.name)
