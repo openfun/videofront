@@ -3,6 +3,7 @@
 .*.swp
 .coverage
 .pytest_cache/
+dist/
 env/
 env3/
 venv/
