@@ -15,7 +15,8 @@ from videofront.celery_videofront import send_task
 
 class LockTests(TransactionTestCase):
     """
-    Tests in this test case will not be wrapped inside an atomic transaction. Do not create data in this test case.
+    Tests in this test case will not be wrapped inside an atomic transaction.
+    Do not create data in this test case.
     """
 
     def setUp(self):

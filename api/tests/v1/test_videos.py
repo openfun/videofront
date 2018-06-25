@@ -51,7 +51,7 @@ class VideosTests(BaseAuthenticatedTests):
 
     def test_list_videos_with_different_owners(self):
         video1 = factories.VideoFactory(owner=self.user)
-        _video2 = factories.VideoFactory(owner=factories.UserFactory())
+        factories.VideoFactory(owner=factories.UserFactory())
         videos = self.client.get(reverse("api:v1:video-list")).json()
 
         self.assertEqual(1, len(videos))
@@ -259,9 +259,11 @@ class VideosTests(BaseAuthenticatedTests):
         playlist = factories.PlaylistFactory(
             name="Funkadelic playlist", owner=self.user
         )
+        # Create a video attached to a playlist
         video_in_playlist = factories.VideoFactory(owner=self.user)
-        _video_not_in_playlist = factories.VideoFactory(owner=self.user)
         playlist.videos.add(video_in_playlist)
+        # Create a video not attached to a playlist
+        factories.VideoFactory(owner=self.user)
 
         response = self.client.get(
             reverse("api:v1:video-list"), data={"playlist_id": playlist.public_id}

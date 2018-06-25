@@ -8,8 +8,11 @@ but instead, we are adding an extra video format.
 - There is no need to generate thumbnail, since it's supposed
   to be done during the initial transcoding.
 """
+from django.utils.timezone import now
 
-from pipeline.tasks import *
+from pipeline import exceptions
+from pipeline import models
+from pipeline.tasks import Lock
 from transcoding.backend_extra import AwsExtraBackend
 
 

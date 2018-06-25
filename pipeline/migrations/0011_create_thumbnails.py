@@ -18,7 +18,7 @@ def create_thumbnails(apps, schema_editor):
         try:
             # Create thumbnail
             backend.create_thumbnail(video.public_id, video.public_thumbnail_id)
-        except:
+        except Exception:
             pass
 
 

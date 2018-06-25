@@ -14,7 +14,7 @@ class Router(routers.DefaultRouter):
     def get_api_root_view(self, api_urls=None):
         root_view = super(Router, self).get_api_root_view(api_urls=api_urls)
         root_view.cls.__doc__ = """List of all the endpoints from the videofront API.
-        
+
         A more detailed and interactive documentation may be found [here](/api/v1/docs).
         """
         return root_view
