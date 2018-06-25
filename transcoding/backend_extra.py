@@ -1,3 +1,6 @@
+"""
+A backend for AWS to add extra transcoding formats
+"""
 from django.conf import settings
 
 from botocore.exceptions import ClientError
@@ -8,7 +11,7 @@ from contrib.plugins.aws.backend import Backend as AwsBackend
 class AwsExtraBackend(AwsBackend):
     """
     Extends the AWS backend, adding ability to apply a new
-    transcoding foramt on top of the existing video formats
+    transcoding format on top of the existing video formats
     that were initially transcoded.
     """
 

@@ -1,3 +1,4 @@
+"""Url definitions for version 1 of the Video Front API"""
 from django.conf.urls import include, url
 
 from rest_framework import routers
@@ -12,7 +13,10 @@ class Router(routers.DefaultRouter):
     """
 
     def get_api_root_view(self, api_urls=None):
-        root_view = super(Router, self).get_api_root_view(api_urls=api_urls)
+        """
+        Populate the __doc__ attribute of the root view before returning it
+        """
+        root_view = super().get_api_root_view(api_urls=api_urls)
         root_view.cls.__doc__ = """List of all the endpoints from the videofront API.
 
         A more detailed and interactive documentation may be found [here](/api/v1/docs).

@@ -1,6 +1,6 @@
 """
 These functions miror what's done on pipeline.tasks.
-The difference is that we don't run the initial transciding,
+The difference is that we don't run the initial transcoding,
 but instead, we are adding an extra video format.
 
 - We don't delete information from the databse.
@@ -10,8 +10,7 @@ but instead, we are adding an extra video format.
 """
 from django.utils.timezone import now
 
-from pipeline import exceptions
-from pipeline import models
+from pipeline import exceptions, models
 from pipeline.tasks import Lock
 from transcoding.backend_extra import AwsExtraBackend
 

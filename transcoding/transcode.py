@@ -10,14 +10,14 @@ TRANSCODE_COST_PER_MIN_AUDIO = 0.00522
 
 logger = logging.getLogger("video-transcoding")
 logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(formatter)
-fh = logging.FileHandler("/var/tmp/video-transcode.log")
-fh.setFormatter(formatter)
-logger.addHandler(fh)
-logger.addHandler(ch)
+FORMATTER = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+CH = logging.StreamHandler()
+CH.setLevel(logging.DEBUG)
+CH.setFormatter(FORMATTER)
+FH = logging.FileHandler("/var/tmp/video-transcode.log")
+FH.setFormatter(FORMATTER)
+logger.addHandler(FH)
+logger.addHandler(CH)
 
 
 def get_videos_to_be_transcoded(course_key):

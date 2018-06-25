@@ -142,9 +142,9 @@ def transcode_video(public_video_id, delete=True):
             try:
                 models.invalidate_cache(public_video_id)
                 _transcode_video(public_video_id, delete=delete)
-            except Exception as e:
+            except Exception as error:
                 # Store error message
-                message = "\n".join([str(arg) for arg in e.args])
+                message = "\n".join([str(arg) for arg in error.args])
                 models.ProcessingState.objects.filter(
                     video__public_id=public_video_id
                 ).update(status=models.ProcessingState.STATUS_FAILED, message=message)
@@ -182,9 +182,9 @@ def _transcode_video(public_video_id, delete=True):
                     )
                     if finished:
                         success_job_indexes.append(job_index)
-                except exceptions.TranscodingFailed as e:
+                except exceptions.TranscodingFailed as error:
                     error_job_indexes.append(job_index)
-                    error_message = e.args[0] if e.args else ""
+                    error_message = error.args[0] if error.args else ""
                     errors.append(error_message)
 
         # Note that we do not delete original assets once transcoding has
@@ -199,8 +199,8 @@ def _transcode_video(public_video_id, delete=True):
     if not errors:
         try:
             backend.get().create_thumbnail(public_video_id, video.public_thumbnail_id)
-        except Exception as e:
-            error_message = "thumbnail creation: " + e.args[0] if e.args else ""
+        except Exception as error:
+            error_message = "thumbnail creation: " + error.args[0] if error.args else ""
             errors.append(error_message)
 
     # Delete related formats (to be re-created)
