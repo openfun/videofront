@@ -12,74 +12,342 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-    ]
+    dependencies = [migrations.swappable_dependency(settings.AUTH_USER_MODEL)]
 
     operations = [
         migrations.CreateModel(
-            name='Playlist',
+            name="Playlist",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(db_index=True, max_length=128)),
-                ('public_id', models.CharField(default=pipeline.utils.generate_random_id, max_length=20, null=True, unique=True, validators=[django.core.validators.MinLengthValidator(1)])),
-                ('owner', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(db_index=True, max_length=128)),
+                (
+                    "public_id",
+                    models.CharField(
+                        default=pipeline.utils.generate_random_id,
+                        max_length=20,
+                        null=True,
+                        unique=True,
+                        validators=[django.core.validators.MinLengthValidator(1)],
+                    ),
+                ),
+                (
+                    "owner",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Video',
+            name="Video",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=100)),
-                ('public_id', models.CharField(default=pipeline.utils.generate_random_id, max_length=20, null=True, unique=True, validators=[django.core.validators.MinLengthValidator(1)])),
-                ('owner', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("title", models.CharField(max_length=100)),
+                (
+                    "public_id",
+                    models.CharField(
+                        default=pipeline.utils.generate_random_id,
+                        max_length=20,
+                        null=True,
+                        unique=True,
+                        validators=[django.core.validators.MinLengthValidator(1)],
+                    ),
+                ),
+                (
+                    "owner",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='VideoFormat',
+            name="VideoFormat",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=128)),
-                ('bitrate', models.FloatField(validators=[django.core.validators.MinValueValidator(0)])),
-                ('video', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='formats', to='pipeline.Video')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=128)),
+                (
+                    "bitrate",
+                    models.FloatField(
+                        validators=[django.core.validators.MinValueValidator(0)]
+                    ),
+                ),
+                (
+                    "video",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="formats",
+                        to="pipeline.Video",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='VideoSubtitles',
+            name="VideoSubtitles",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('public_id', models.CharField(default=pipeline.utils.generate_random_id, max_length=20, null=True, unique=True, validators=[django.core.validators.MinLengthValidator(1)])),
-                ('language', models.CharField(choices=[('af', 'Afrikaans'), ('ar', 'Arabic'), ('az', 'Azerbaijani'), ('bg', 'Bulgarian'), ('be', 'Belarusian'), ('bn', 'Bengali'), ('br', 'Breton'), ('bs', 'Bosnian'), ('ca', 'Catalan'), ('cs', 'Czech'), ('cy', 'Welsh'), ('da', 'Danish'), ('de', 'German'), ('el', 'Greek'), ('en', 'English'), ('eo', 'Esperanto'), ('es', 'Spanish'), ('et', 'Estonian'), ('eu', 'Basque'), ('fa', 'Persian'), ('fi', 'Finnish'), ('fr', 'French'), ('fy', 'Frisian'), ('ga', 'Irish'), ('gd', 'Scottish Gaelic'), ('gl', 'Galician'), ('he', 'Hebrew'), ('hi', 'Hindi'), ('hr', 'Croatian'), ('hu', 'Hungarian'), ('ia', 'Interlingua'), ('id', 'Indonesian'), ('io', 'Ido'), ('is', 'Icelandic'), ('it', 'Italian'), ('ja', 'Japanese'), ('ka', 'Georgian'), ('kk', 'Kazakh'), ('km', 'Khmer'), ('kn', 'Kannada'), ('ko', 'Korean'), ('lb', 'Luxembourgish'), ('lt', 'Lithuanian'), ('lv', 'Latvian'), ('mk', 'Macedonian'), ('ml', 'Malayalam'), ('mn', 'Mongolian'), ('mr', 'Marathi'), ('my', 'Burmese'), ('nb', 'Norwegian Bokmal'), ('ne', 'Nepali'), ('nl', 'Dutch'), ('nn', 'Norwegian Nynorsk'), ('os', 'Ossetic'), ('pa', 'Punjabi'), ('pl', 'Polish'), ('pt', 'Portuguese'), ('ro', 'Romanian'), ('ru', 'Russian'), ('sk', 'Slovak'), ('sl', 'Slovenian'), ('sq', 'Albanian'), ('sr', 'Serbian'), ('sv', 'Swedish'), ('sw', 'Swahili'), ('ta', 'Tamil'), ('te', 'Telugu'), ('th', 'Thai'), ('tr', 'Turkish'), ('tt', 'Tatar'), ('uk', 'Ukrainian'), ('ur', 'Urdu'), ('vi', 'Vietnamese')], max_length=2, null=True, validators=[django.core.validators.MinLengthValidator(2)])),
-                ('video', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='subtitles', to='pipeline.Video')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "public_id",
+                    models.CharField(
+                        default=pipeline.utils.generate_random_id,
+                        max_length=20,
+                        null=True,
+                        unique=True,
+                        validators=[django.core.validators.MinLengthValidator(1)],
+                    ),
+                ),
+                (
+                    "language",
+                    models.CharField(
+                        choices=[
+                            ("af", "Afrikaans"),
+                            ("ar", "Arabic"),
+                            ("az", "Azerbaijani"),
+                            ("bg", "Bulgarian"),
+                            ("be", "Belarusian"),
+                            ("bn", "Bengali"),
+                            ("br", "Breton"),
+                            ("bs", "Bosnian"),
+                            ("ca", "Catalan"),
+                            ("cs", "Czech"),
+                            ("cy", "Welsh"),
+                            ("da", "Danish"),
+                            ("de", "German"),
+                            ("el", "Greek"),
+                            ("en", "English"),
+                            ("eo", "Esperanto"),
+                            ("es", "Spanish"),
+                            ("et", "Estonian"),
+                            ("eu", "Basque"),
+                            ("fa", "Persian"),
+                            ("fi", "Finnish"),
+                            ("fr", "French"),
+                            ("fy", "Frisian"),
+                            ("ga", "Irish"),
+                            ("gd", "Scottish Gaelic"),
+                            ("gl", "Galician"),
+                            ("he", "Hebrew"),
+                            ("hi", "Hindi"),
+                            ("hr", "Croatian"),
+                            ("hu", "Hungarian"),
+                            ("ia", "Interlingua"),
+                            ("id", "Indonesian"),
+                            ("io", "Ido"),
+                            ("is", "Icelandic"),
+                            ("it", "Italian"),
+                            ("ja", "Japanese"),
+                            ("ka", "Georgian"),
+                            ("kk", "Kazakh"),
+                            ("km", "Khmer"),
+                            ("kn", "Kannada"),
+                            ("ko", "Korean"),
+                            ("lb", "Luxembourgish"),
+                            ("lt", "Lithuanian"),
+                            ("lv", "Latvian"),
+                            ("mk", "Macedonian"),
+                            ("ml", "Malayalam"),
+                            ("mn", "Mongolian"),
+                            ("mr", "Marathi"),
+                            ("my", "Burmese"),
+                            ("nb", "Norwegian Bokmal"),
+                            ("ne", "Nepali"),
+                            ("nl", "Dutch"),
+                            ("nn", "Norwegian Nynorsk"),
+                            ("os", "Ossetic"),
+                            ("pa", "Punjabi"),
+                            ("pl", "Polish"),
+                            ("pt", "Portuguese"),
+                            ("ro", "Romanian"),
+                            ("ru", "Russian"),
+                            ("sk", "Slovak"),
+                            ("sl", "Slovenian"),
+                            ("sq", "Albanian"),
+                            ("sr", "Serbian"),
+                            ("sv", "Swedish"),
+                            ("sw", "Swahili"),
+                            ("ta", "Tamil"),
+                            ("te", "Telugu"),
+                            ("th", "Thai"),
+                            ("tr", "Turkish"),
+                            ("tt", "Tatar"),
+                            ("uk", "Ukrainian"),
+                            ("ur", "Urdu"),
+                            ("vi", "Vietnamese"),
+                        ],
+                        max_length=2,
+                        null=True,
+                        validators=[django.core.validators.MinLengthValidator(2)],
+                    ),
+                ),
+                (
+                    "video",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="subtitles",
+                        to="pipeline.Video",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='VideoTranscoding',
+            name="VideoTranscoding",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('started_at', models.DateTimeField(auto_now=True, verbose_name='Time of transcoding job start')),
-                ('progress', models.FloatField(default=0, validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(100)], verbose_name='Progress percentage')),
-                ('status', models.CharField(choices=[('pending', 'Pending'), ('processing', 'Processing'), ('failed', 'Failed'), ('success', 'Success')], max_length=32, verbose_name='Status')),
-                ('message', models.CharField(blank=True, max_length=1024)),
-                ('video', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='transcoding', to='pipeline.Video')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "started_at",
+                    models.DateTimeField(
+                        auto_now=True, verbose_name="Time of transcoding job start"
+                    ),
+                ),
+                (
+                    "progress",
+                    models.FloatField(
+                        default=0,
+                        validators=[
+                            django.core.validators.MinValueValidator(0),
+                            django.core.validators.MaxValueValidator(100),
+                        ],
+                        verbose_name="Progress percentage",
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending"),
+                            ("processing", "Processing"),
+                            ("failed", "Failed"),
+                            ("success", "Success"),
+                        ],
+                        max_length=32,
+                        verbose_name="Status",
+                    ),
+                ),
+                ("message", models.CharField(blank=True, max_length=1024)),
+                (
+                    "video",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="transcoding",
+                        to="pipeline.Video",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='VideoUploadUrl',
+            name="VideoUploadUrl",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('public_video_id', models.CharField(default=pipeline.utils.generate_random_id, max_length=20, null=True, unique=True, validators=[django.core.validators.MinLengthValidator(1)])),
-                ('filename', models.CharField(max_length=128, verbose_name='Uploaded file name')),
-                ('expires_at', models.IntegerField(db_index=True, verbose_name='Timestamp at which the url expires')),
-                ('was_used', models.BooleanField(db_index=True, default=False, verbose_name='Was the upload url used?')),
-                ('last_checked', models.DateTimeField(blank=True, db_index=True, null=True, verbose_name='Last time it was checked if the url was used')),
-                ('owner', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='video_upload_urls', to=settings.AUTH_USER_MODEL)),
-                ('playlist', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='pipeline.Playlist', verbose_name='Playlist to which the video will be added after upload')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "public_video_id",
+                    models.CharField(
+                        default=pipeline.utils.generate_random_id,
+                        max_length=20,
+                        null=True,
+                        unique=True,
+                        validators=[django.core.validators.MinLengthValidator(1)],
+                    ),
+                ),
+                (
+                    "filename",
+                    models.CharField(max_length=128, verbose_name="Uploaded file name"),
+                ),
+                (
+                    "expires_at",
+                    models.IntegerField(
+                        db_index=True, verbose_name="Timestamp at which the url expires"
+                    ),
+                ),
+                (
+                    "was_used",
+                    models.BooleanField(
+                        db_index=True,
+                        default=False,
+                        verbose_name="Was the upload url used?",
+                    ),
+                ),
+                (
+                    "last_checked",
+                    models.DateTimeField(
+                        blank=True,
+                        db_index=True,
+                        null=True,
+                        verbose_name="Last time it was checked if the url was used",
+                    ),
+                ),
+                (
+                    "owner",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="video_upload_urls",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "playlist",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="pipeline.Playlist",
+                        verbose_name="Playlist to which the video will be added after upload",
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='playlist',
-            name='videos',
-            field=models.ManyToManyField(related_name='playlists', to='pipeline.Video'),
+            model_name="playlist",
+            name="videos",
+            field=models.ManyToManyField(related_name="playlists", to="pipeline.Video"),
         ),
     ]

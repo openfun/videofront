@@ -68,6 +68,7 @@ def acquire_lock(name, expires_in=None):
         return True
     raise exceptions.LockUnavailable(name)
 
+
 def release_lock(name):
     """
     Release a lock for all. Note that the lock will be released even if it was
@@ -83,6 +84,7 @@ def release_lock(name):
     except TransactionManagementError:
         logger.error("Could not release lock %s", name)
 
+
 def upload_video(public_video_id, file_object):
     """
     Store a video file for transcoding.
@@ -92,9 +94,13 @@ def upload_video(public_video_id, file_object):
         file_object (file)
     """
     # Make upload url unavailable immediately to avoid race conditions
-    models.VideoUploadUrl.objects.filter(public_video_id=public_video_id).update(was_used=True)
+    models.VideoUploadUrl.objects.filter(public_video_id=public_video_id).update(
+        was_used=True
+    )
 
-    video_upload_url = models.VideoUploadUrl.objects.get(public_video_id=public_video_id)
+    video_upload_url = models.VideoUploadUrl.objects.get(
+        public_video_id=public_video_id
+    )
 
     # Upload video
     backend.get().upload_video(public_video_id, file_object)
@@ -103,29 +109,37 @@ def upload_video(public_video_id, file_object):
     video = models.Video.objects.create(
         public_id=video_upload_url.public_video_id,
         owner=video_upload_url.owner,
-        title=file_object.name
+        title=file_object.name,
     )
     if video_upload_url.playlist:
         video.playlists.add(video_upload_url.playlist)
 
     # Start transcoding
-    send_task('transcode_video', args=(public_video_id,))
+    send_task("transcode_video", args=(public_video_id,))
 
-@shared_task(name='transcode_video_restart')
+
+@shared_task(name="transcode_video_restart")
 def transcode_video_restart():
-    with Lock('TASK_LOCK_TRANSCODE_VIDEO_RESTART', 60) as lock:
+    with Lock("TASK_LOCK_TRANSCODE_VIDEO_RESTART", 60) as lock:
         if lock.is_acquired:
-            for processing_state in models.ProcessingState.objects.filter(status=models.ProcessingState.STATUS_RESTART):
-                send_task('transcode_video', args=(processing_state.video.public_id,), kwargs={'delete': False})
+            for processing_state in models.ProcessingState.objects.filter(
+                status=models.ProcessingState.STATUS_RESTART
+            ):
+                send_task(
+                    "transcode_video",
+                    args=(processing_state.video.public_id,),
+                    kwargs={"delete": False},
+                )
 
-@shared_task(name='transcode_video')
+
+@shared_task(name="transcode_video")
 def transcode_video(public_video_id, delete=True):
     """
     Args:
         public_video_id (str)
         delete (bool): delete video on failure
     """
-    with Lock('TASK_LOCK_TRANSCODE_VIDEO:' + public_video_id, 3600) as lock:
+    with Lock("TASK_LOCK_TRANSCODE_VIDEO:" + public_video_id, 3600) as lock:
         if lock.is_acquired:
             try:
                 models.invalidate_cache(public_video_id)
@@ -135,24 +149,22 @@ def transcode_video(public_video_id, delete=True):
                 message = "\n".join([str(arg) for arg in e.args])
                 models.ProcessingState.objects.filter(
                     video__public_id=public_video_id
-                ).update(
-                    status=models.ProcessingState.STATUS_FAILED,
-                    message=message,
-                )
+                ).update(status=models.ProcessingState.STATUS_FAILED, message=message)
                 raise
             finally:
                 models.invalidate_cache(public_video_id)
+
 
 def _transcode_video(public_video_id, delete=True):
     """
     This function is not thread-safe. It should only be called by the transcode_video task.
     """
     video = models.Video.objects.get(public_id=public_video_id)
-    processing_state = models.ProcessingState.objects.filter(video__public_id=public_video_id)
+    processing_state = models.ProcessingState.objects.filter(
+        video__public_id=public_video_id
+    )
     processing_state.update(
-        progress=0,
-        status=models.ProcessingState.STATUS_PENDING,
-        started_at=now()
+        progress=0, status=models.ProcessingState.STATUS_PENDING, started_at=now()
     )
 
     jobs = backend.get().start_transcoding(public_video_id)
@@ -162,9 +174,14 @@ def _transcode_video(public_video_id, delete=True):
     jobs_progress = [0] * len(jobs)
     while len(success_job_indexes) + len(error_job_indexes) < len(jobs):
         for job_index, job in enumerate(jobs):
-            if job_index not in success_job_indexes and job_index not in error_job_indexes:
+            if (
+                job_index not in success_job_indexes
+                and job_index not in error_job_indexes
+            ):
                 try:
-                    jobs_progress[job_index], finished = backend.get().check_progress(job)
+                    jobs_progress[job_index], finished = backend.get().check_progress(
+                        job
+                    )
                     if finished:
                         success_job_indexes.append(job_index)
                 except exceptions.TranscodingFailed as e:
@@ -177,7 +194,7 @@ def _transcode_video(public_video_id, delete=True):
         # the transcoding process.
         processing_state.update(
             progress=sum(jobs_progress) * 1. / len(jobs),
-            status=models.ProcessingState.STATUS_PROCESSING
+            status=models.ProcessingState.STATUS_PROCESSING,
         )
 
     # Create thumbnail
@@ -202,13 +219,16 @@ def _transcode_video(public_video_id, delete=True):
         # Create video formats first so that they are available as soon as the
         # video object becomes available from the API
         for format_name, bitrate in backend.get().iter_formats(public_video_id):
-            models.VideoFormat.objects.create(video=video, name=format_name, bitrate=bitrate)
+            models.VideoFormat.objects.create(
+                video=video, name=format_name, bitrate=bitrate
+            )
 
         processing_state.update(status=models.ProcessingState.STATUS_SUCCESS)
 
     # If the video was deleted while the file was transcoding, wipe all data
     if not models.Video.objects.filter(public_id=public_video_id).exists():
         delete_video(public_video_id)
+
 
 def upload_subtitle(public_video_id, subtitle_public_id, language_code, content):
     """
@@ -221,7 +241,7 @@ def upload_subtitle(public_video_id, subtitle_public_id, language_code, content)
         content (bytes)
     """
     # Note: if this ever raises an exception, we should convert it to SubtitleInvalid
-    content = content.decode('utf-8')
+    content = content.decode("utf-8")
 
     # Convert to VTT, whatever the initial format
     content = content.strip("\ufeff\n\r")
@@ -231,7 +251,10 @@ def upload_subtitle(public_video_id, subtitle_public_id, language_code, content)
     if sub_reader != pycaption.WebVTTReader:
         content = pycaption.WebVTTWriter().write(sub_reader().read(content))
 
-    backend.get().upload_subtitle(public_video_id, subtitle_public_id, language_code, content)
+    backend.get().upload_subtitle(
+        public_video_id, subtitle_public_id, language_code, content
+    )
+
 
 def upload_thumbnail(public_video_id, file_object):
     """
@@ -242,7 +265,7 @@ def upload_thumbnail(public_video_id, file_object):
         content (bytes)
     """
     video = models.Video.objects.get(public_id=public_video_id)
-    out_img = NamedTemporaryFile(mode='rb', suffix=".jpg")
+    out_img = NamedTemporaryFile(mode="rb", suffix=".jpg")
 
     try:
         utils.make_thumbnail(file_object, out_img.name)
@@ -262,15 +285,18 @@ def upload_thumbnail(public_video_id, file_object):
     video.public_thumbnail_id = thumb_id
     video.save()
 
+
 def delete_video(public_video_id):
     """ Delete all video assets """
     backend.get().delete_video(public_video_id)
+
 
 def delete_subtitle(public_video_id, public_subtitle_id):
     """ Delete subtitle associated to video"""
     backend.get().delete_subtitle(public_video_id, public_subtitle_id)
 
-@shared_task(name='clean_upload_urls')
+
+@shared_task(name="clean_upload_urls")
 def clean_upload_urls():
     """
     Remove video upload urls which cannot be used anymore.

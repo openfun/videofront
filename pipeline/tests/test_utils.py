@@ -8,7 +8,6 @@ from pipeline import utils
 
 
 class UtilsTests(TestCase):
-
     def test_generate_random_id(self):
         id1 = utils.generate_random_id(1)
         id2 = utils.generate_random_id(2)
@@ -18,8 +17,10 @@ class UtilsTests(TestCase):
 
     def test_resize_thumbnail(self):
         def check_size(max_size, expected_width, expected_height):
-            img_path = os.path.join(os.path.dirname(__file__), 'fixtures', 'elcapitan.jpg')
-            out_img = NamedTemporaryFile(mode='rb', suffix=".jpg")
+            img_path = os.path.join(
+                os.path.dirname(__file__), "fixtures", "elcapitan.jpg"
+            )
+            out_img = NamedTemporaryFile(mode="rb", suffix=".jpg")
             utils.resize_image(img_path, out_img.name, max_size)
 
             resized_image = Image.open(out_img.name)
@@ -30,8 +31,10 @@ class UtilsTests(TestCase):
         check_size(2, 1, 2)
 
     def test_make_thumbnail(self):
-        image = open(os.path.join(os.path.dirname(__file__), 'fixtures', 'elcapitan.jpg'), 'rb')
-        out_img = NamedTemporaryFile(mode='rb', suffix=".jpg")
+        image = open(
+            os.path.join(os.path.dirname(__file__), "fixtures", "elcapitan.jpg"), "rb"
+        )
+        out_img = NamedTemporaryFile(mode="rb", suffix=".jpg")
         utils.make_thumbnail(image, out_img.name)
 
         resized_image = Image.open(out_img.name)

@@ -7,14 +7,22 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('pipeline', '0003_auto_20160824_0733'),
-    ]
+    dependencies = [("pipeline", "0003_auto_20160824_0733")]
 
     operations = [
         migrations.AlterField(
-            model_name='videotranscoding',
-            name='status',
-            field=models.CharField(choices=[('pending', 'Pending'), ('processing', 'Processing'), ('failed', 'Failed'), ('success', 'Success')], default='pending', max_length=32, verbose_name='Status'),
-        ),
+            model_name="videotranscoding",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("pending", "Pending"),
+                    ("processing", "Processing"),
+                    ("failed", "Failed"),
+                    ("success", "Success"),
+                ],
+                default="pending",
+                max_length=32,
+                verbose_name="Status",
+            ),
+        )
     ]

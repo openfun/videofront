@@ -1,9 +1,9 @@
 import importlib
+
 from django.conf import settings
 
 
 class BaseBackend(object):
-
     def upload_video(self, video_id, file_object):
         """
         Store a video file for transcoding.
@@ -138,7 +138,7 @@ class BaseBackend(object):
         This feature is optional. If undefined, the thumbnail url will be an
         empty string.
         """
-        return ''
+        return ""
 
 
 class UndefinedPluginBackend(Exception):
@@ -159,11 +159,11 @@ def get():
         MissingPluginBackend in case of a missing plugin class definition
 
     """
-    setting = getattr(settings, 'PLUGIN_BACKEND')
+    setting = getattr(settings, "PLUGIN_BACKEND")
     if setting is None:
         raise UndefinedPluginBackend()
 
-    if hasattr(setting, '__call__'):
+    if hasattr(setting, "__call__"):
         backend_object = setting()
     else:
         module_name, object_name = setting.rsplit(".", 1)

@@ -20,26 +20,26 @@ class LockTests(TransactionTestCase):
     """
 
     def setUp(self):
-        tasks.release_lock('dummylock')
+        tasks.release_lock("dummylock")
 
     def tearDown(self):
-        tasks.release_lock('dummylock')
+        tasks.release_lock("dummylock")
 
     def test_acquire_release_lock_cycle(self):
         self.assertTrue(tasks.acquire_lock("dummylock"))
         self.assertRaises(exceptions.LockUnavailable, tasks.acquire_lock, "dummylock")
-        tasks.release_lock('dummylock')
+        tasks.release_lock("dummylock")
         self.assertTrue(tasks.acquire_lock("dummylock"))
 
     def test_release_lock_with_integrity_error(self):
         def failing_task():
-            tasks.acquire_lock('dummylock', 3600)
+            tasks.acquire_lock("dummylock", 3600)
 
             try:
                 models.Video.objects.create(public_id="id")
                 models.Video.objects.create(public_id="id")
             finally:
-                tasks.release_lock('dummylock')
+                tasks.release_lock("dummylock")
 
         self.assertRaises(IntegrityError, failing_task)
         self.assertTrue(tasks.acquire_lock("dummylock"))
@@ -47,37 +47,38 @@ class LockTests(TransactionTestCase):
     def test_context_manager(self):
 
         # 1) Lock is available
-        with tasks.Lock('dummylock') as lock:
+        with tasks.Lock("dummylock") as lock:
             self.assertTrue(lock.is_acquired)
-            self.assertRaises(exceptions.LockUnavailable, tasks.acquire_lock, "dummylock")
+            self.assertRaises(
+                exceptions.LockUnavailable, tasks.acquire_lock, "dummylock"
+            )
 
         self.assertFalse(lock.is_acquired)
 
         # 2) Lock is unavailable
         tasks.acquire_lock("dummylock")
-        with tasks.Lock('dummylock') as lock:
+        with tasks.Lock("dummylock") as lock:
             self.assertFalse(lock.is_acquired)
 
         self.assertRaises(exceptions.LockUnavailable, tasks.acquire_lock, "dummylock")
 
 
 class TasksTests(TestCase):
-
     def test_upload_video(self):
-        mock_backend = Mock(return_value=Mock(
-            upload_video=Mock(),
-            start_transcoding=Mock(return_value=[]),
-            iter_formats=Mock(return_value=[]),
-        ))
+        mock_backend = Mock(
+            return_value=Mock(
+                upload_video=Mock(),
+                start_transcoding=Mock(return_value=[]),
+                iter_formats=Mock(return_value=[]),
+            )
+        )
         factories.VideoUploadUrlFactory(
-            was_used=False,
-            public_video_id='videoid',
-            expires_at=time() + 3600
+            was_used=False, public_video_id="videoid", expires_at=time() + 3600
         )
         file_object = Mock()
         file_object.name = "Some video.mp4"
         with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.upload_video('videoid', file_object)
+            tasks.upload_video("videoid", file_object)
 
         self.assertEqual(1, models.Video.objects.count())
         self.assertEqual(1, models.VideoUploadUrl.objects.count())
@@ -88,71 +89,78 @@ class TasksTests(TestCase):
         self.assertTrue(video_upload_url.was_used)
 
     def test_upload_url_invalidated_after_failed_upload(self):
-        mock_backend = Mock(return_value=Mock(
-            upload_video=Mock(side_effect=ValueError),
-        ))
+        mock_backend = Mock(
+            return_value=Mock(upload_video=Mock(side_effect=ValueError))
+        )
         factories.VideoUploadUrlFactory(
-            was_used=False,
-            public_video_id='videoid',
-            expires_at=time() + 3600
+            was_used=False, public_video_id="videoid", expires_at=time() + 3600
         )
         file_object = Mock()
         file_object.name = "Some video.mp4"
         with override_settings(PLUGIN_BACKEND=mock_backend):
-            self.assertRaises(ValueError, tasks.upload_video, 'videoid', file_object)
+            self.assertRaises(ValueError, tasks.upload_video, "videoid", file_object)
 
         self.assertEqual(0, models.Video.objects.count())
         self.assertEqual(0, models.VideoUploadUrl.objects.available().count())
 
-
     def test_transcode_video_success(self):
-        factories.VideoFactory(public_id='videoid', public_thumbnail_id='thumbid')
-        mock_backend = Mock(return_value=Mock(
-            start_transcoding=Mock(return_value=['job1']),
-            check_progress=Mock(return_value=(42, True)),
-            iter_formats=Mock(return_value=[('SD', 128)]),
-            create_thumbnail=Mock(),
-        ))
+        factories.VideoFactory(public_id="videoid", public_thumbnail_id="thumbid")
+        mock_backend = Mock(
+            return_value=Mock(
+                start_transcoding=Mock(return_value=["job1"]),
+                check_progress=Mock(return_value=(42, True)),
+                iter_formats=Mock(return_value=[("SD", 128)]),
+                create_thumbnail=Mock(),
+            )
+        )
 
         with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.transcode_video('videoid')
+            tasks.transcode_video("videoid")
 
         self.assertEqual(1, models.ProcessingState.objects.count())
         video_processing_state = models.ProcessingState.objects.get()
-        self.assertEqual(models.ProcessingState.STATUS_SUCCESS, video_processing_state.status)
+        self.assertEqual(
+            models.ProcessingState.STATUS_SUCCESS, video_processing_state.status
+        )
         self.assertEqual("", video_processing_state.message)
         self.assertEqual(42, video_processing_state.progress)
-        mock_backend.return_value.create_thumbnail.assert_called_once_with('videoid', 'thumbid')
-        mock_backend.return_value.check_progress.assert_called_once_with('job1')
+        mock_backend.return_value.create_thumbnail.assert_called_once_with(
+            "videoid", "thumbid"
+        )
+        mock_backend.return_value.check_progress.assert_called_once_with("job1")
         self.assertEqual(1, models.VideoFormat.objects.count())
         video_format = models.VideoFormat.objects.get()
-        self.assertEqual('videoid', video_format.video.public_id)
-        self.assertEqual('SD', video_format.name)
+        self.assertEqual("videoid", video_format.video.public_id)
+        self.assertEqual("SD", video_format.name)
         self.assertEqual(128, video_format.bitrate)
 
     def test_transcode_video_failure(self):
-        factories.VideoFactory(public_id='videoid')
+        factories.VideoFactory(public_id="videoid")
 
         def check_progress(job):
-            if job == 'job1':
+            if job == "job1":
                 # job1 finishes
-                raise exceptions.TranscodingFailed('error message')
+                raise exceptions.TranscodingFailed("error message")
             else:
                 # job2 finishes
                 return 100, True
 
-        mock_backend = Mock(return_value=Mock(
-            start_transcoding=Mock(return_value=['job1', 'job2']),
-            check_progress=check_progress,
-            iter_formats=Mock(return_value=[]),
-        ))
+        mock_backend = Mock(
+            return_value=Mock(
+                start_transcoding=Mock(return_value=["job1", "job2"]),
+                check_progress=check_progress,
+                iter_formats=Mock(return_value=[]),
+            )
+        )
 
         with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.transcode_video('videoid')
+            tasks.transcode_video("videoid")
 
         self.assertEqual(1, models.ProcessingState.objects.count())
         video_processing_state = models.ProcessingState.objects.get()
-        self.assertEqual(models.ProcessingState.STATUS_FAILED, video_processing_state.status)
+        self.assertEqual(
+            models.ProcessingState.STATUS_FAILED, video_processing_state.status
+        )
         self.assertEqual("error message", video_processing_state.message)
         self.assertEqual(50, video_processing_state.progress)
         mock_backend.return_value.create_thumbnail.assert_not_called()
@@ -164,121 +172,147 @@ class TasksTests(TestCase):
         user.save()
         self.client.login(username="test", password="password")
 
-        factories.VideoFactory(public_id='videoid', owner=user)
+        factories.VideoFactory(public_id="videoid", owner=user)
 
-        mock_backend = Mock(return_value=Mock(
-            start_transcoding=Mock(return_value=['job']),
-            check_progress=Mock(side_effect=exceptions.TranscodingFailed),
-        ))
+        mock_backend = Mock(
+            return_value=Mock(
+                start_transcoding=Mock(return_value=["job"]),
+                check_progress=Mock(side_effect=exceptions.TranscodingFailed),
+            )
+        )
 
-        video_pre_transcoding = self.client.get(reverse("api:v1:video-detail", kwargs={"id": 'videoid'})).json()
+        video_pre_transcoding = self.client.get(
+            reverse("api:v1:video-detail", kwargs={"id": "videoid"})
+        ).json()
         with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.transcode_video('videoid')
-        video_post_transcoding = self.client.get(reverse("api:v1:video-detail", kwargs={"id": 'videoid'})).json()
+            tasks.transcode_video("videoid")
+        video_post_transcoding = self.client.get(
+            reverse("api:v1:video-detail", kwargs={"id": "videoid"})
+        ).json()
 
-        self.assertEqual('pending', video_pre_transcoding['processing']['status'])
-        self.assertEqual('failed', video_post_transcoding['processing']['status'])
-
+        self.assertEqual("pending", video_pre_transcoding["processing"]["status"])
+        self.assertEqual("failed", video_post_transcoding["processing"]["status"])
 
     def test_transcode_video_unexpected_failure(self):
-        factories.VideoFactory(public_id='videoid')
+        factories.VideoFactory(public_id="videoid")
 
-        mock_backend = Mock(return_value=Mock(
-            start_transcoding=Mock(side_effect=ValueError(666, "random error"))
-        ))
+        mock_backend = Mock(
+            return_value=Mock(
+                start_transcoding=Mock(side_effect=ValueError(666, "random error"))
+            )
+        )
 
         with override_settings(PLUGIN_BACKEND=mock_backend):
-            self.assertRaises(ValueError, tasks.transcode_video, 'videoid')
+            self.assertRaises(ValueError, tasks.transcode_video, "videoid")
 
         video_processing_state = models.ProcessingState.objects.get()
-        self.assertEqual(models.ProcessingState.STATUS_FAILED, video_processing_state.status)
+        self.assertEqual(
+            models.ProcessingState.STATUS_FAILED, video_processing_state.status
+        )
         self.assertEqual("666\nrandom error", video_processing_state.message)
 
     def test_transcode_video_twice(self):
-        factories.VideoFactory(public_id='videoid')
-        mock_backend = Mock(return_value=Mock(
-            start_transcoding=Mock(return_value=['job1']),
-            iter_formats=Mock(return_value=[]),
-        ))
+        factories.VideoFactory(public_id="videoid")
+        mock_backend = Mock(
+            return_value=Mock(
+                start_transcoding=Mock(return_value=["job1"]),
+                iter_formats=Mock(return_value=[]),
+            )
+        )
 
         # First attempt: failure
-        mock_backend.return_value.check_progress = Mock(side_effect=exceptions.TranscodingFailed)
+        mock_backend.return_value.check_progress = Mock(
+            side_effect=exceptions.TranscodingFailed
+        )
         with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.transcode_video('videoid')
+            tasks.transcode_video("videoid")
 
         # Second attempt: success
         mock_backend.return_value.check_progress = Mock(return_value=(100, True))
         with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.transcode_video('videoid')
+            tasks.transcode_video("videoid")
 
         video_processing_state = models.ProcessingState.objects.get()
-        self.assertEqual(models.ProcessingState.STATUS_SUCCESS, video_processing_state.status)
+        self.assertEqual(
+            models.ProcessingState.STATUS_SUCCESS, video_processing_state.status
+        )
         self.assertEqual("", video_processing_state.message)
         self.assertEqual(100, video_processing_state.progress)
 
     def test_transcode_video_restart(self):
-        video = factories.VideoFactory(public_id='videoid')
-        models.ProcessingState.objects.filter(video=video).update(status=models.ProcessingState.STATUS_RESTART)
+        video = factories.VideoFactory(public_id="videoid")
+        models.ProcessingState.objects.filter(video=video).update(
+            status=models.ProcessingState.STATUS_RESTART
+        )
 
-        mock_backend = Mock(return_value=Mock(
-            start_transcoding=Mock(return_value=[]),
-            iter_formats=Mock(return_value=[]),
-        ))
+        mock_backend = Mock(
+            return_value=Mock(
+                start_transcoding=Mock(return_value=[]),
+                iter_formats=Mock(return_value=[]),
+            )
+        )
         with override_settings(PLUGIN_BACKEND=mock_backend):
             tasks.transcode_video_restart()
 
-        mock_backend.return_value.start_transcoding.assert_called_once_with('videoid')
+        mock_backend.return_value.start_transcoding.assert_called_once_with("videoid")
         self.assertEqual(
             models.ProcessingState.STATUS_SUCCESS,
-            models.ProcessingState.objects.get(video=video).status
+            models.ProcessingState.objects.get(video=video).status,
         )
 
     def test_transcode_video_restart_fails(self):
-        video = factories.VideoFactory(public_id='videoid')
-        models.ProcessingState.objects.filter(video=video).update(status=models.ProcessingState.STATUS_RESTART)
+        video = factories.VideoFactory(public_id="videoid")
+        models.ProcessingState.objects.filter(video=video).update(
+            status=models.ProcessingState.STATUS_RESTART
+        )
 
-        mock_backend = Mock(return_value=Mock(
-            start_transcoding=Mock(return_value=[1]),
-            check_progress=Mock(side_effect=exceptions.TranscodingFailed),
-        ))
+        mock_backend = Mock(
+            return_value=Mock(
+                start_transcoding=Mock(return_value=[1]),
+                check_progress=Mock(side_effect=exceptions.TranscodingFailed),
+            )
+        )
         with override_settings(PLUGIN_BACKEND=mock_backend):
             tasks.transcode_video_restart()
 
         self.assertEqual(
             models.ProcessingState.STATUS_FAILED,
-            models.ProcessingState.objects.get(video=video).status
+            models.ProcessingState.objects.get(video=video).status,
         )
         mock_backend.return_value.delete_video.assert_not_called()
 
     def test_transcode_video_thumbnail_create_fails(self):
-        video = factories.VideoFactory(public_id='videoid')
-        mock_backend = Mock(return_value=Mock(
-            start_transcoding=Mock(return_value=[]),
-            iter_formats=Mock(return_value=[]),
-            create_thumbnail=Mock(side_effect=ValueError("description")),
-        ))
+        video = factories.VideoFactory(public_id="videoid")
+        mock_backend = Mock(
+            return_value=Mock(
+                start_transcoding=Mock(return_value=[]),
+                iter_formats=Mock(return_value=[]),
+                create_thumbnail=Mock(side_effect=ValueError("description")),
+            )
+        )
 
         with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.transcode_video('videoid')
+            tasks.transcode_video("videoid")
 
         processing_state = models.ProcessingState.objects.get(video=video)
         self.assertEqual(models.ProcessingState.STATUS_FAILED, processing_state.status)
         self.assertEqual("thumbnail creation: description", processing_state.message)
 
     def test_video_is_deleted_during_transcoding(self):
-        factories.VideoFactory(public_id='videoid')
+        factories.VideoFactory(public_id="videoid")
 
         def start_transcoding(video_id):
-            models.Video.objects.filter(public_id='videoid').delete()
+            models.Video.objects.filter(public_id="videoid").delete()
             return []
 
-        mock_backend = Mock(return_value=Mock(
-            start_transcoding=start_transcoding,
-            iter_formats=Mock(return_value=[]),
-        ))
+        mock_backend = Mock(
+            return_value=Mock(
+                start_transcoding=start_transcoding, iter_formats=Mock(return_value=[])
+            )
+        )
 
         with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.transcode_video('videoid')
+            tasks.transcode_video("videoid")
 
         self.assertEqual(0, models.Video.objects.count())
         self.assertEqual(0, models.ProcessingState.objects.count())
@@ -286,7 +320,6 @@ class TasksTests(TestCase):
 
 
 class SubtitleTasksTest(TestCase):
-
     def test_upload_subtitle(self):
         srt_content = """1
 00:00:00,822 --> 00:00:01,565
@@ -313,56 +346,62 @@ Also I have utf8 characters: é û ë ï 你好.
 
         mock_backend = Mock(return_value=Mock(upload_subtitle=Mock()))
         with override_settings(PLUGIN_BACKEND=mock_backend):
-            tasks.upload_subtitle('videoid', 'subtitleid', 'fr', srt_content.encode('utf-8'))
-        mock_backend.return_value.upload_subtitle.assert_called_once_with('videoid', 'subtitleid', 'fr', vtt_content)
+            tasks.upload_subtitle(
+                "videoid", "subtitleid", "fr", srt_content.encode("utf-8")
+            )
+        mock_backend.return_value.upload_subtitle.assert_called_once_with(
+            "videoid", "subtitleid", "fr", vtt_content
+        )
 
     def test_upload_subtitle_with_invalid_format(self):
         mock_backend = Mock(return_value=Mock(upload_subtitle=Mock()))
         with override_settings(PLUGIN_BACKEND=mock_backend):
             self.assertRaises(
                 exceptions.SubtitleInvalid,
-                tasks.upload_subtitle, 'videoid', 'subtitleid', 'fr', b'Some invalid content'
+                tasks.upload_subtitle,
+                "videoid",
+                "subtitleid",
+                "fr",
+                b"Some invalid content",
             )
 
-class UploadUrlsTasksTests(TestCase):
 
+class UploadUrlsTasksTests(TestCase):
     def test_clean_upload_urls(self):
         factories.VideoUploadUrlFactory(
-            public_video_id='available',
-            expires_at=time(),
-            was_used=False
+            public_video_id="available", expires_at=time(), was_used=False
         )
         factories.VideoUploadUrlFactory(
-            public_video_id='expired',
-            expires_at=time() - 7200,
-            was_used=False
+            public_video_id="expired", expires_at=time() - 7200, was_used=False
         )
         factories.VideoUploadUrlFactory(
-            public_video_id='expired_used',
-            expires_at=time() - 7200,
-            was_used=True
+            public_video_id="expired_used", expires_at=time() - 7200, was_used=True
         )
-        send_task('clean_upload_urls')
+        send_task("clean_upload_urls")
 
-        upload_url_ids = [url.public_video_id for url in models.VideoUploadUrl.objects.all()]
+        upload_url_ids = [
+            url.public_video_id for url in models.VideoUploadUrl.objects.all()
+        ]
 
-        self.assertIn('available', upload_url_ids)
-        self.assertIn('expired_used', upload_url_ids)
+        self.assertIn("available", upload_url_ids)
+        self.assertIn("expired_used", upload_url_ids)
         self.assertEqual(2, len(upload_url_ids))
 
 
 class UploadThumbnailTests(TestCase):
-
     def test_upload_thumbnail(self):
         factories.VideoFactory(public_id="videoid", public_thumbnail_id="old_thumbid")
-        img = open(os.path.join(os.path.dirname(__file__), 'fixtures', 'elcapitan.jpg'), 'rb')
+        img = open(
+            os.path.join(os.path.dirname(__file__), "fixtures", "elcapitan.jpg"), "rb"
+        )
 
-        mock_backend = Mock(return_value=Mock(
-            upload_thumbnail=Mock(),
-            delete_thumbnail=Mock(),
-        ))
+        mock_backend = Mock(
+            return_value=Mock(upload_thumbnail=Mock(), delete_thumbnail=Mock())
+        )
         with override_settings(PLUGIN_BACKEND=mock_backend):
             tasks.upload_thumbnail("videoid", img)
 
         mock_backend.return_value.upload_thumbnail.assert_called_once()
-        mock_backend.return_value.delete_thumbnail.assert_called_once_with("videoid", "old_thumbid")
+        mock_backend.return_value.delete_thumbnail.assert_called_once_with(
+            "videoid", "old_thumbid"
+        )
