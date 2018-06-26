@@ -7,14 +7,17 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('pipeline', '0007_auto_20160913_1247'),
-    ]
+    dependencies = [("pipeline", "0007_auto_20160913_1247")]
 
     operations = [
         migrations.AddField(
-            model_name='videouploadurl',
-            name='origin',
-            field=models.CharField(blank=True, max_length=256, null=True, verbose_name='Access-Control-Allow-Origin header value to add to CORS responses'),
-        ),
+            model_name="videouploadurl",
+            name="origin",
+            field=models.CharField(
+                blank=True,
+                max_length=256,
+                null=True,
+                verbose_name="Access-Control-Allow-Origin header value to add to CORS responses",
+            ),
+        )
     ]

@@ -1,0 +1,9 @@
+# Django
+DJANGO_SETTINGS_MODULE=videofront.settings.development
+DJANGO_SECRET_KEY=ThisIsAnExampleKeyForDevPurposeOnly
+
+# Database
+POSTGRES_HOST=db
+POSTGRES_DB=videofront
+POSTGRES_USER=fun
+POSTGRES_PASSWORD=pass

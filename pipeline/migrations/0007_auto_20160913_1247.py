@@ -7,17 +7,9 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('pipeline', '0006_auto_20160905_1245'),
-    ]
+    dependencies = [("pipeline", "0006_auto_20160905_1245")]
 
     operations = [
-        migrations.RemoveField(
-            model_name='videouploadurl',
-            name='filename',
-        ),
-        migrations.RemoveField(
-            model_name='videouploadurl',
-            name='last_checked',
-        ),
+        migrations.RemoveField(model_name="videouploadurl", name="filename"),
+        migrations.RemoveField(model_name="videouploadurl", name="last_checked"),
     ]

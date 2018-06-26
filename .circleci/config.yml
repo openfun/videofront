@@ -1,0 +1,535 @@
+# Configuration file anchors
+generate-version-file: &generate-version-file
+  run:
+    name: Create a version.json
+    command: |
+      # Create a version.json à-la-mozilla
+      # https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
+      printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' \
+        "$CIRCLE_SHA1" \
+        "$CIRCLE_TAG" \
+        "$CIRCLE_PROJECT_USERNAME" \
+        "$CIRCLE_PROJECT_REPONAME" \
+        "$CIRCLE_BUILD_URL" > version.json
+
+
+version: 2
+jobs:
+
+  # Git jobs
+  # Check that the git history is clean and complies with our expectations
+  lint-git:
+
+    machine: true
+
+    working_directory: ~/fun
+
+    steps:
+      - checkout
+
+      - run:
+          name: Check absence of fixup commits
+          command: |
+            ! git log | grep 'fixup!'
+
+      - run:
+          name: Install gitlint
+          command: |
+            pip install gitlint
+
+      - run:
+          name: lint commit messages added to master
+          command: |
+            gitlint --commits origin/master..HEAD
+
+  # Docker/back-end jobs
+  # Build job
+  # Build the Docker image ready for production
+  build:
+
+    # We use the machine executor, i.e. a VM, not a container
+    machine:
+      # Cache docker layers so that we strongly speed up this job execution
+      docker_layer_caching: true
+
+    working_directory: ~/fun
+
+    steps:
+      # Checkout repository sources
+      - checkout
+
+      # Generate a version.json file describing app release
+      - <<: *generate-version-file
+
+      # Each image is tagged with the current git commit sha1 to avoid
+      # collisions in parallel builds.
+      - run:
+          name: Build production image
+          command: |
+            docker build \
+              -t videofront:${CIRCLE_SHA1} \
+              .
+
+      - run:
+          name: Check built image availability
+          command: docker images "videofront:${CIRCLE_SHA1}*"
+
+      # Since we cannot rely on CircleCI's Docker layers cache (for obscure
+      # reasons some subsequent jobs will benefit from a previous job cache and
+      # some others won't), we choose to save built docker images in cached
+      # directories. This ensures that we will be able to load built docker
+      # images in subsequent jobs.
+      - run:
+          name: Store docker image in cache
+          command: |
+            docker save \
+              -o docker/images/videofront.tar \
+              videofront:${CIRCLE_SHA1}
+
+      - save_cache:
+          paths:
+            - ~/fun/docker/images/
+          key: docker-debian-images-{{ .Revision }}
+
+  # Build dev job
+  # Build the Docker image ready for development
+  build-dev:
+
+    machine:
+      docker_layer_caching: true
+
+    working_directory: ~/fun
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - docker-debian-images-{{ .Revision }}
+
+      - run:
+          name: Load images to docker engine
+          command: |
+            docker load < docker/images/videofront.tar
+
+      - run:
+          name: List available images
+          command: docker images "videofront:${CIRCLE_SHA1}*"
+
+      # Generate a version.json file describing app release
+      - <<: *generate-version-file
+
+      # Development image build, it uses the dev Dockerfile file
+      - run:
+          name: Build development image
+          command: |
+            docker build \
+              -t videofront:${CIRCLE_SHA1}-dev \
+              -f docker/images/dev/Dockerfile \
+              --build-arg BASE_TAG=${CIRCLE_SHA1} \
+              .
+
+      - run:
+          name: Check built image availability
+          command: docker images "videofront:${CIRCLE_SHA1}*"
+
+      - run:
+          name: Store docker image in cache
+          command: |
+            docker save \
+              -o docker/images/dev/videofront.tar \
+              videofront:${CIRCLE_SHA1} \
+              videofront:${CIRCLE_SHA1}-dev
+
+      - save_cache:
+          paths:
+            - ~/fun/docker/images/dev/
+          key: docker-debian-images-dev-{{ .Revision }}
+
+  lint-back-isort:
+
+    machine: true
+
+    working_directory: ~/fun
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - docker-debian-images-dev-{{ .Revision }}
+
+      - run:
+          name: Load images to docker engine
+          command: |
+            docker load < docker/images/dev/videofront.tar
+
+      - run:
+          name: Lint code with isort
+          command: |
+            docker-compose \
+              -p videofront-test \
+              -f docker/compose/ci/docker-compose.yml \
+              --project-directory . \
+              run --rm --no-deps app \
+                isort --recursive --check-only .
+
+  lint-back-flake8:
+
+    machine: true
+
+    working_directory: ~/fun
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - docker-debian-images-dev-{{ .Revision }}
+
+      - run:
+          name: Load images to docker engine
+          command: |
+            docker load < docker/images/dev/videofront.tar
+
+      - run:
+          name: Lint code with flake8
+          command: |
+            docker-compose \
+              -p videofront-test \
+              -f docker/compose/ci/docker-compose.yml \
+              --project-directory . \
+              run --rm --no-deps app \
+                flake8
+
+  lint-back-pylint:
+
+    machine: true
+
+    working_directory: ~/fun
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - docker-debian-images-dev-{{ .Revision }}
+
+      - run:
+          name: Load images to docker engine
+          command: |
+            docker load < docker/images/dev/videofront.tar
+
+      - run:
+          name: Lint code with pylint
+          command: |
+            docker-compose \
+              -p videofront-test \
+              -f docker/compose/ci/docker-compose.yml \
+              --project-directory . \
+              run --rm --no-deps app \
+                pylint apps plugins videofront
+
+  lint-back-black:
+
+    machine: true
+
+    working_directory: ~/fun
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - docker-debian-images-dev-{{ .Revision }}
+
+      - run:
+          name: Load images to docker engine
+          command: |
+            docker load < docker/images/dev/videofront.tar
+
+      - run:
+          name: Lint code with black
+          command: |
+            docker-compose \
+              -p videofront-test \
+              -f docker/compose/ci/docker-compose.yml \
+              --project-directory . \
+              run --rm --no-deps app \
+                black apps plugins videofront --check
+
+  test-back:
+
+    machine: true
+
+    working_directory: ~/fun
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - docker-debian-images-dev-{{ .Revision }}
+
+      - run:
+          name: Load images to docker engine
+          command: |
+            docker load < docker/images/dev/videofront.tar
+
+      # Run back-end (Django) test suite
+      #
+      # Nota bene: to run the django test suite, we need to ensure that both
+      # PostgreSQL and ElasticSearch services are up and ready. To achieve this,
+      # we wrap the pytest command execution with dockerize, a tiny tool
+      # installed in the development image. In our case, dockerize will wait
+      # up to one minute that both the database and elastisearch containers
+      # opened their expected tcp port (5432 and 9200 resp.).
+      - run:
+          name: Run tests
+          command: |
+            docker-compose \
+              -p videofront-test \
+              -f docker/compose/ci/docker-compose.yml \
+              --project-directory . \
+              run --rm app \
+                dockerize \
+                  -wait tcp://db:5432 \
+                  -timeout 60s \
+                    pytest
+
+  # ---- Alpine jobs ----
+  build-alpine:
+
+    machine:
+      docker_layer_caching: true
+
+    working_directory: ~/fun
+
+    steps:
+      - checkout
+
+      # Generate a version.json file describing app release
+      - <<: *generate-version-file
+
+      - run:
+          name: Build alpine production image
+          command: |
+            docker build \
+              -t videofront:${CIRCLE_SHA1}-alpine \
+              -f docker/images/alpine/Dockerfile \
+              .
+
+      - run:
+          name: Build alpine development image
+          command: |
+            docker build \
+              -t videofront:${CIRCLE_SHA1}-alpine-dev \
+              -f docker/images/alpine/dev/Dockerfile \
+              --build-arg BASE_TAG=${CIRCLE_SHA1}-alpine \
+              .
+
+      - run:
+          name: List available images
+          command: docker images videofront
+
+      - run:
+          name: Store docker image in cache
+          command: |
+            docker save \
+              -o docker/images/alpine/videofront.tar \
+              videofront:${CIRCLE_SHA1}-alpine \
+              videofront:${CIRCLE_SHA1}-alpine-dev
+
+      - save_cache:
+          paths:
+            - ~/fun/docker/images/
+          key: docker-alpine-images-dev-{{ .Revision }}
+
+  test-alpine:
+
+    machine: true
+
+    working_directory: ~/fun
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - docker-alpine-images-dev-{{ .Revision }}
+
+      - run:
+          name: Load images to docker engine
+          command: |
+            docker load < docker/images/alpine/videofront.tar
+
+      - run:
+          name: Run tests
+          command: |
+            IMAGE_SUFFIX="-alpine" \
+            docker-compose \
+              -p videofront-test \
+              -f docker/compose/ci/docker-compose.yml \
+              --project-directory . \
+              run --rm app \
+                dockerize \
+                  -wait tcp://db:5432 \
+                  -timeout 60s \
+                    pytest
+
+  # ---- DockerHub publication job ----
+  hub:
+
+    machine: true
+
+    working_directory: ~/fun
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - docker-debian-images-dev-{{ .Revision }}
+
+      - restore_cache:
+          keys:
+            - docker-alpine-images-dev-{{ .Revision }}
+
+      # Load all built images in all flavors
+      - run:
+          name: Load images to docker engine
+          command: |
+            docker load < docker/images/dev/videofront.tar
+            docker load < docker/images/alpine/videofront.tar
+
+      # Login to DockerHub to Publish new images
+      #
+      # Nota bene: you'll need to define the following secrets environment vars
+      # in CircleCI interface:
+      #
+      #   - DOCKER_USER
+      #   - DOCKER_PASS
+      - run:
+          name: Login to DockerHub
+          command: echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+
+      # Tag docker images with the same pattern used in Git (Semantic Versioning)
+      #
+      # Git tag: v1.0.1
+      # Docker tag: 1.0.1(-alpine)(-dev)
+      - run:
+          name: Tag images
+          command: |
+            docker images fundocker/videofront
+            DOCKER_TAG=$(echo ${CIRCLE_TAG} | sed 's/^v//')
+            echo "DOCKER_TAG: ${DOCKER_TAG} (from Git tag: ${CIRCLE_TAG})"
+            docker tag videofront:${CIRCLE_SHA1} fundocker/videofront:latest
+            docker tag videofront:${CIRCLE_SHA1} fundocker/videofront:${DOCKER_TAG}
+            docker tag videofront:${CIRCLE_SHA1}-dev fundocker/videofront:${DOCKER_TAG}-dev
+            docker tag videofront:${CIRCLE_SHA1}-alpine fundocker/videofront:alpine
+            docker tag videofront:${CIRCLE_SHA1}-alpine fundocker/videofront:${DOCKER_TAG}-alpine
+            docker tag videofront:${CIRCLE_SHA1}-alpine-dev fundocker/videofront:${DOCKER_TAG}-alpine-dev
+            docker images "fundocker/videofront:${DOCKER_TAG}*"
+
+      # Publish images to DockerHub
+      #
+      # Nota bene: logged user (see "Login to DockerHub" step) must have write
+      # permission for the project's repository; this also implies that the
+      # DockerHub repository already exists.
+      - run:
+          name: Publish images
+          command: |
+            DOCKER_TAG=$(echo ${CIRCLE_TAG} | sed 's/^v//')
+            echo "DOCKER_TAG: ${DOCKER_TAG} (from Git tag: ${CIRCLE_TAG})"
+            docker push fundocker/videofront:latest
+            docker push fundocker/videofront:${DOCKER_TAG}
+            docker push fundocker/videofront:${DOCKER_TAG}-dev
+            docker push fundocker/videofront:alpine
+            docker push fundocker/videofront:${DOCKER_TAG}-alpine
+            docker push fundocker/videofront:${DOCKER_TAG}-alpine-dev
+
+workflows:
+  version: 2
+
+  videofront:
+    jobs:
+      # Git jobs
+      #
+      # Check validity of git history
+      - lint-git:
+          filters:
+            tags:
+              only: /.*/
+
+      # Docker jobs
+      #
+      # Build, lint and test production and development Docker images
+      # (debian-based)
+      - build:
+          filters:
+            tags:
+              only: /.*/
+      - build-dev:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
+      - lint-back-black:
+          requires:
+            - build-dev
+          filters:
+            tags:
+              only: /.*/
+      - lint-back-isort:
+          requires:
+            - build-dev
+          filters:
+            tags:
+              only: /.*/
+      - lint-back-flake8:
+          requires:
+            - build-dev
+          filters:
+            tags:
+              only: /.*/
+      - lint-back-pylint:
+          requires:
+            - build-dev
+          filters:
+            tags:
+              only: /.*/
+      - test-back:
+          requires:
+            - build-dev
+          filters:
+            tags:
+              only: /.*/
+
+      # Docker alpine jobs
+      #
+      # Build and run tests in alpine based images
+      - build-alpine:
+          filters:
+            tags:
+              only: /.*/
+      - test-alpine:
+          requires:
+            - build-alpine
+          filters:
+            tags:
+              only: /.*/
+
+      # DockerHub publication.
+      #
+      # Publish docker images only if all build, lint and test jobs succeed and
+      # it has been tagged with a tag starting with the letter v
+      - hub:
+          requires:
+            - test-back
+            - test-alpine
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/

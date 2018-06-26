@@ -18,8 +18,9 @@ def create_thumbnails(apps, schema_editor):
         try:
             # Create thumbnail
             backend.create_thumbnail(video.public_id, video.public_thumbnail_id)
-        except:
+        except Exception:
             pass
+
 
 def delete_thumbnails(apps, schema_editor):
     Video = apps.get_model("pipeline", "Video")
@@ -33,10 +34,8 @@ def delete_thumbnails(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('pipeline', '0010_video_public_thumbnail_id'),
-    ]
+    dependencies = [("pipeline", "0010_video_public_thumbnail_id")]
 
     operations = [
-        migrations.RunPython(create_thumbnails, reverse_code=delete_thumbnails),
+        migrations.RunPython(create_thumbnails, reverse_code=delete_thumbnails)
     ]

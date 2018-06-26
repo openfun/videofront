@@ -1,9 +1,14 @@
+# Python
 *.pyc
 .*.swp
 .coverage
-venv/
+.pytest_cache/
+dist/
 env/
 env3/
-db.sqlite3
+venv/
+
 videofront/settings_prod.py
 celerybeat-schedule
+
+db.sqlite3

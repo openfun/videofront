@@ -7,14 +7,23 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('pipeline', '0005_auto_20160825_0819'),
-    ]
+    dependencies = [("pipeline", "0005_auto_20160825_0819")]
 
     operations = [
         migrations.AlterField(
-            model_name='processingstate',
-            name='status',
-            field=models.CharField(choices=[('pending', 'Pending'), ('processing', 'Processing'), ('failed', 'Failed'), ('success', 'Success'), ('restart', 'Restart')], default='pending', max_length=32, verbose_name='Status'),
-        ),
+            model_name="processingstate",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("pending", "Pending"),
+                    ("processing", "Processing"),
+                    ("failed", "Failed"),
+                    ("success", "Success"),
+                    ("restart", "Restart"),
+                ],
+                default="pending",
+                max_length=32,
+                verbose_name="Status",
+            ),
+        )
     ]

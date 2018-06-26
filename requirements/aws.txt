@@ -1,1 +1,4 @@
+# DEPRECATED: Python dependencies are now listed in setup.cfg. This requirement file is kept
+# only because it is still used in production. It will be removed after upgrading our
+# infrastructure to Docker.
 boto3==1.3.1

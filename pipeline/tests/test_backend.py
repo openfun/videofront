@@ -5,7 +5,6 @@ from pipeline import backend
 
 
 class PipelineBackendTests(TestCase):
-
     @override_settings(PLUGIN_BACKEND=None)
     def test_undefined_backend(self):
         self.assertRaises(backend.UndefinedPluginBackend, backend.get)
