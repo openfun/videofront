@@ -15,5 +15,28 @@ id_xblock: {{ request.session.id_xblock  }}
 <a href="{% url 'api:v1:router:videouploadurl-list' %}">videouploadurls</a>
 <br/>
 <a href="{% url 'api:v1:router:video-list' %}">videos</a>
+<br/>
+{% if countV == 1 %}
+{% for video in videos %}
+
+<div class="libcast-xblock">
+    <h2>{{ video.title }}</h2>
+    <iframe id="{{ video.public_id }}"
+        width="100%"
+        height="375"
+        src="https://www.youtube.com/embed/{{ video.public_id }}?rel=0&amp;showinfo=0&amp;enablejsapi=1"
+        frameborder="0" allowfullscreen></iframe>
+</div>
+{% endfor %}
+{% else %}
+<embed id="videoarea" controls="controls" poster="" src="" type="video/mp4" crossorigin="anonymous"></embed>
+
+<ul id="playlist">
+                {% for video in videos %}
+		<li movieurl="https://www.youtube.com/embed/{{ video.public_id }}?rel=0&amp;showinfo=0&amp;enablejsapi=1" type="video/mp4">{{video.title}}</li>
+		{% endfor %}
+</ul>
+
+{% endif %}
 
 {% endblock %}

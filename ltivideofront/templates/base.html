@@ -1,6 +1,26 @@
 <!DOCTYPE html> <html> <head>
   <meta charset="utf-8">
   <title>{% block title %}VideoFront LTI{% endblock %}</title> 
+<style>
+#playlist {
+    display:table;
+}
+#playlist li{
+    cursor:pointer;
+    padding:8px;
+}
+
+#playlist li:hover{
+    color:blue;                        
+}
+#videoarea {
+    float:left;
+    width:640px;
+    height:480px;
+    margin:10px;    
+    border:1px solid silver;
+}
+</style>
 </head> <body>
   <header>
     <h1>VideoFront LTI</h1>
@@ -18,5 +38,20 @@
   </main>
   <hr>
   <footer>
-  </footer> </body>
-</html>
+  </footer> 
+</body>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+$(function() {
+    $("#playlist li").on("click", function() {
+        $("#videoarea").attr({
+            "src": $(this).attr("movieurl")
+        })
+
+    })
+    $("#videoarea").attr({
+        "src": $("#playlist li").eq(1).attr("movieurl"),
+        "poster": $("#playlist li").eq(1).attr("moviesposter")
+    })
+})
+</script></html>
