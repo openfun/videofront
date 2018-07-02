@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+
+role: {{ request.session.role }}
+<br/>
+coursename:{{ request.session.coursename  }}
+<br/>
+id_xblock: {{ request.session.id_xblock  }}
+  <h2>Home</h2> 
+<a href="{% url 'api:v1:router:playlist-list' %}">playlist</a>
+<br/>
+<a href="{% url 'api:v1:router:videouploadurl-list' %}">videouploadurls</a>
+<br/>
+<a href="{% url 'api:v1:router:video-list' %}">videos</a>
+
+{% endblock %}
