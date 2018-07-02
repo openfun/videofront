@@ -44,10 +44,10 @@
 <script type="text/javascript">
 $(function() {
     $("#playlist li").on("click", function() {
-        $("#videoarea").attr({
-            "src": $(this).attr("movieurl")
-        })
-
+        var parent = $('embed#videoarea').parent();
+        var newElement = "<embed src='"+$(this).attr("movieurl")+"' id='videoarea'>";
+        $('embed#videoarea').remove();
+        parent.append(newElement);
     })
     $("#videoarea").attr({
         "src": $("#playlist li").eq(1).attr("movieurl"),
