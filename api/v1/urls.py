@@ -3,6 +3,7 @@ from django.conf.urls import include, url
 
 from rest_framework import routers
 from rest_framework.authtoken import views as authtoken_views
+from django.views.decorators.csrf import csrf_exempt
 
 from . import views
 
@@ -36,7 +37,7 @@ router.register(
 )
 
 urlpatterns = [
-    url(r"^", include(router.urls)),
+    url(r"^", include(router.urls,namespace="router")),
     url(r"^docs$", views.schema_view),
     url(r"^auth-token/", authtoken_views.obtain_auth_token, name="auth-token"),
 ]

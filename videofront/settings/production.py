@@ -9,11 +9,10 @@ from datetime import timedelta
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "ThisIsAnExampleKeyForTestPurposeOnly")
-DEBUG = False
-ALLOWED_HOSTS = [h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h]
-
+DEBUG = True
+#ALLOWED_HOSTS = [h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h]
+ALLOWED_HOSTS = ['*']
 # AWS
-
 AWS_ACCESS_KEY_ID = os.environ.get(
     "DJANGO_AWS_ACCESS_KEY_ID", "ThisIsAnExampleAccessKeyIdForTestPurposeOnly"
 )
@@ -63,6 +62,9 @@ INSTALLED_APPS = [
     "api",
     "contrib.plugins.aws",  # This is only useful for storing videos on S3
     "pipeline",
+    'django_auth_lti',
+    'django_app_lti',
+    'ltivideofront',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -74,14 +76,46 @@ MIDDLEWARE_CLASSES = [
     "django.contrib.auth.middleware.SessionAuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'django_auth_lti.middleware.LTIAuthMiddleware',
+
 ]
+# Add to authentication backends (for django-auth-lti)
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'django_auth_lti.backends.LTIAuthBackend',
+)
+
+# Add LTI configuration settings (for django-app-lti)
+LTI_SETUP = {
+    "TOOL_TITLE": "lti4",
+    "TOOL_DESCRIPTION": "My tool description",
+    "LAUNCH_URL": "ltivideofront:launch",
+    "LAUNCH_REDIRECT_URL": "ltivideofront:index",
+    "INITIALIZE_MODELS": "resource_and_course_users", # Options: False|resource_only|resource_and_course|resource_and_course_users
+    "EXTENSION_PARAMETERS": {
+        "canvas.instructure.com": {
+            "privacy_level": "public",
+            "course_navigation": {
+                "enabled": "true",
+                "default": "disabled",
+                "text": "lti4 (localhost)",
+            }
+        }
+    }
+}
+
+# Add LTI oauth credentials (for django-auth-lti)
+LTI_OAUTH_CREDENTIALS = {
+    "mykey":"TD5Y9OtVsPbQQPPJtQ6xh1mXJIipxmsG",
+    "myotherkey": "myothersecret",
+}
+LTI_OAUTH_USE_DB_CREDENTIALS=True
 
 ROOT_URLCONF = "videofront.urls"
-
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [ os.path.join(BASE_DIR, '../ltivideofront/templates')],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -102,12 +136,18 @@ WSGI_APPLICATION = "videofront.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
-        "NAME": os.environ.get("POSTGRES_DB", "videofront"),
-        "USER": os.environ.get("POSTGRES_USER", "fun"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "pass"),
-        "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
-        "PORT": os.environ.get("POSTGRES_PORT", 5432),
+        'ENGINE': 'django.db.backends.mysql', 
+        'NAME': 'funlti',
+        'USER': 'root',
+        'PASSWORD': 'admin',
+        'HOST': 'localhost',   # Or an IP Address that your DB is hosted on
+        'PORT': '3306',
+#        "ENGINE": "django.db.backends.postgresql_psycopg2",
+#        "NAME": os.environ.get("POSTGRES_DB", "videofront"),
+#        "USER": os.environ.get("POSTGRES_USER", "fun"),
+#        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "pass"),
+#        "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
+#        "PORT": os.environ.get("POSTGRES_PORT", 5432),
     }
 }
 
@@ -148,6 +188,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
 STATIC_URL = "/static/"
+# Application definition
+LOGIN_REDIRECT_URL='/ltivideofront/'
+LOGIN_URL='/ltivideofront/'
 
 # REST Framework
 
