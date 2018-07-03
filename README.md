@@ -41,6 +41,12 @@ Install python requirements in a virtual environment:
     source venv/bin/activate
     pip install -r requirements/base.txt
 
+If you wish to interact with Django LTI provider, additional dependencies need to be installed:
+
+pip install git+https://github.com/procangroup/ims_lti_py@master#egg=ims_lti_py
+pip install git+https://github.com/procangroup/django-app-lti@master#egg=django-app-lti
+pip install git+https://github.com/procangroup/django_auth_lti@master#egg=django-auth-lti
+
 If you wish to interact with Amazon Web Services, additional dependencies need to be installed:
 
     pip install -r requirements/aws.txt
