@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'django_auth_lti',
     'django_app_lti',
     'ltivideofront',
+    'corsheaders',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -77,8 +78,17 @@ MIDDLEWARE_CLASSES = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     'django_auth_lti.middleware.LTIAuthMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 
 ]
+
+CORS_ORIGIN_ALLOW_ALL=True
+CORS_ORIGIN_WHITELIST = (
+    'youtube.com',
+    'www.youtube.com',
+    'localhost:8000',
+)
+
 # Add to authentication backends (for django-auth-lti)
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
