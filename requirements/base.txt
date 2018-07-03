@@ -19,3 +19,7 @@ oauth2==1.9.0.post1
 pbr==3.1.1
 pytz==2017.2
 six==1.10.0
+
+-e git+https://github.com/procangroup/ims_lti_py@master#egg=ims_lti_py
+-e git+https://github.com/procangroup/django-app-lti@master#egg=django-app-lti
+-e git+https://github.com/procangroup/django_auth_lti@master#egg=django-auth-lti
